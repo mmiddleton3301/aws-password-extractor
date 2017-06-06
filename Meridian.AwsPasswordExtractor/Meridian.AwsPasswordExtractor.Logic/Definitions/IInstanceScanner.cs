@@ -1,5 +1,5 @@
 ﻿// ----------------------------------------------------------------------------
-// <copyright file="IExtractorManager.cs" company="MTCS (Matt Middleton)">
+// <copyright file="IInstanceScanner.cs" company="MTCS (Matt Middleton)">
 // Copyright (c) Meridian Technology Consulting Services (Matt Middleton).
 // All rights reserved.
 // </copyright>
@@ -13,7 +13,7 @@ namespace Meridian.AwsPasswordExtractor.Logic.Definitions
     /// <summary>
     /// Describes the operations of the extractor manager.
     /// </summary>
-    public interface IExtractorManager
+    public interface IInstanceScanner
     {
         /// <summary>
         /// Extracts information relating to EC2 instances for the configured

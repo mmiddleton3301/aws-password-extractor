@@ -1,5 +1,5 @@
 ﻿// ----------------------------------------------------------------------------
-// <copyright file="ExtractorManager.cs" company="MTCS (Matt Middleton)">
+// <copyright file="InstanceScanner.cs" company="MTCS (Matt Middleton)">
 // Copyright (c) Meridian Technology Consulting Services (Matt Middleton).
 // All rights reserved.
 // </copyright>
@@ -21,9 +21,9 @@ namespace Meridian.AwsPasswordExtractor.Logic
     using Meridian.AwsPasswordExtractor.Logic.Models;
 
     /// <summary>
-    /// Implements <see cref="IExtractorManager" />. 
+    /// Implements <see cref="IInstanceScanner" />. 
     /// </summary>
-    public class ExtractorManager : IExtractorManager
+    public class InstanceScanner : IInstanceScanner
     {
         /// <summary>
         /// The number of instances to return in one go - this value is
@@ -38,19 +38,19 @@ namespace Meridian.AwsPasswordExtractor.Logic
         private readonly IFileSystemProvider fileSystemProvider;
 
         /// <summary>
-        /// Initialises a new instance of the <see cref="ExtractorManager" />
+        /// Initialises a new instance of the <see cref="InstanceScanner" />
         /// class.
         /// </summary>
         /// <param name="fileSystemProvider">
         /// An instance of <see cref="IFileSystemProvider" />. 
         /// </param>
-        public ExtractorManager(IFileSystemProvider fileSystemProvider)
+        public InstanceScanner(IFileSystemProvider fileSystemProvider)
         {
             this.fileSystemProvider = fileSystemProvider;
         }
 
         /// <summary>
-        /// Implements <see cref="IExtractorManager.ExtractDetails()" />. 
+        /// Implements <see cref="IInstanceScanner.ExtractDetails()" />. 
         /// </summary>
         /// <param name="region">
         /// The AWS region in which to execute AWS SDK methods against.

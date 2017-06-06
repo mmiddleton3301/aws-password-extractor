@@ -47,8 +47,8 @@ namespace Meridian.AwsPasswordExtractor.Console
             Container container = new Container(registry);
 
             // Get an instance.
-            IExtractorManager extractorManager =
-                container.GetInstance<IExtractorManager>();
+            IInstanceScanner extractorManager =
+                container.GetInstance<IInstanceScanner>();
 
             // TODO: Allow the pass-thru of AWS access keys.
             // TODO: Include logging/error handling.
@@ -58,6 +58,9 @@ namespace Meridian.AwsPasswordExtractor.Console
                     options.AwsRegion,
                     options.PasswordEncryptionKeyFile,
                     options.RoleArn);
+
+            // Then, save it to the output file. Just text file for now.
+            // TODO: Terminals favourite export.
         }
     }
 }

@@ -31,6 +31,19 @@ namespace Meridian.AwsPasswordExtractor.Console
         }
 
         /// <summary>
+        /// Gets or sets the location of the output file.
+        /// </summary>
+        [Option(
+            Required = true,
+            HelpText = "The output location to contain instance details. If " +
+                "a file exists already, then it will be overwritten.")]
+        public FileInfo OuputFile
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// Gets or sets the location of the password encryption key file.
         /// </summary>
         [Option(
