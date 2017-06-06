@@ -7,6 +7,7 @@
 
 namespace Meridian.AwsPasswordExtractor.Console
 {
+    using CommandLine;
     using Meridian.AwsPasswordExtractor.Logic.Definitions;
     using Meridian.AwsPasswordExtractor.Logic.Models;
     using StructureMap;
@@ -25,6 +26,22 @@ namespace Meridian.AwsPasswordExtractor.Console
         /// </param>
         private static void Main(string[] args)
         {
+            ParserResult<Options> parseResult =
+                Parser.Default.ParseArguments<Options>(args);
+
+            parseResult.WithParsed(CommandLineArgumentsParsed);
+        }
+
+        /// <summary>
+        /// The method triggered when the command line arguments are parsed
+        /// with success.
+        /// </summary>
+        /// <param name="options">
+        /// An instance of <see cref="Options" /> containing the parsed command
+        /// line arguments.
+        /// </param>
+        private static void CommandLineArgumentsParsed(Options options)
+        {
             // Create our StructureMap registry and...
             Registry registry = new Registry();
             Container container = new Container(registry);
@@ -35,7 +52,8 @@ namespace Meridian.AwsPasswordExtractor.Console
 
             // Then extract instance detail.
             InstanceDetail[] instanceDetails =
-                extractorManager.ExtractDetails(); 
+                extractorManager.ExtractDetails(
+                    options.RoleArn);
         }
     }
 }
