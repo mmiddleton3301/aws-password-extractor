@@ -9,7 +9,6 @@ namespace Meridian.AwsPasswordExtractor.Console
 {
     using CommandLine;
     using Meridian.AwsPasswordExtractor.Logic.Definitions;
-    using Meridian.AwsPasswordExtractor.Logic.Models;
     using StructureMap;
 
     /// <summary>
@@ -47,20 +46,14 @@ namespace Meridian.AwsPasswordExtractor.Console
             Container container = new Container(registry);
 
             // Get an instance.
-            IInstanceScanner extractorManager =
-                container.GetInstance<IInstanceScanner>();
+            IOutputFileGenerator outputFileGenerator =
+                container.GetInstance<IOutputFileGenerator>();
 
-            // TODO: Allow the pass-thru of AWS access keys.
-            // TODO: Include logging/error handling.
-            // Then extract instance detail.
-            InstanceDetail[] instanceDetails =
-                extractorManager.ExtractDetails(
-                    options.AwsRegion,
-                    options.PasswordEncryptionKeyFile,
-                    options.RoleArn);
-
-            // Then, save it to the output file. Just text file for now.
-            // TODO: Terminals favourite export.
+            outputFileGenerator.CreateOutputFile(
+                options.AwsRegion,
+                options.PasswordEncryptionKeyFile,
+                options.RoleArn,
+                options.OutputFile);
         }
     }
 }

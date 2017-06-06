@@ -37,7 +37,7 @@ namespace Meridian.AwsPasswordExtractor.Console
             Required = true,
             HelpText = "The output location to contain instance details. If " +
                 "a file exists already, then it will be overwritten.")]
-        public FileInfo OuputFile
+        public FileInfo OutputFile
         {
             get;
             set;
