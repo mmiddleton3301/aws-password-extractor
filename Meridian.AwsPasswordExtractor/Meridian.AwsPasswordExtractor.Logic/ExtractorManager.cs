@@ -9,6 +9,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
 {
     using System.Collections.Generic;
     using System.Linq;
+    using System.Net;
     using Amazon;
     using Amazon.EC2;
     using Amazon.EC2.Model;
@@ -79,6 +80,61 @@ namespace Meridian.AwsPasswordExtractor.Logic
                     roleArn);
             }
 
+            Reservation[] allReservations =
+                this.GetRegionReservations(amazonEC2);
+
+            Instance[] allInstances = allReservations
+                .SelectMany(x => x.Instances)
+                .ToArray();
+
+            toReturn = allInstances
+                .Select(this.ConvertInstanceToInstanceDetail)
+                .ToArray();
+
+            return toReturn;
+        }
+
+        /// <summary>
+        /// Converts an instance of <see cref="Instance" /> to
+        /// <see cref="InstanceDetail" />, so that the information can be used
+        /// in constructing a list of whatever format.  
+        /// </summary>
+        /// <param name="instance">
+        /// An instance of <see cref="Instance" />. 
+        /// </param>
+        /// <returns>
+        /// An instance of <see cref="InstanceDetail" />. 
+        /// </returns>
+        private InstanceDetail ConvertInstanceToInstanceDetail(
+            Instance instance)
+        {
+            InstanceDetail toReturn = new InstanceDetail()
+            {
+                IPAddress = IPAddress.Parse(instance.PrivateIpAddress)
+            };
+
+            // TODO: Investigate whether names are always stored in the tags?
+            Tag nameTag = instance.Tags.Single(x => x.Key == "Name");
+
+            toReturn.Name = nameTag.Value;
+
+            return toReturn;
+        }
+
+        /// <summary>
+        /// Fetches all of the <see cref="Reservation" />s from the configured 
+        /// </summary>
+        /// <param name="amazonEC2">
+        /// An instance of <see cref="IAmazonEC2" /> to use in communicating
+        /// with the AWS API.
+        /// </param>
+        /// <returns>
+        /// An array of <see cref="Reservation" /> instances.
+        /// </returns>
+        private Reservation[] GetRegionReservations(IAmazonEC2 amazonEC2)
+        {
+            Reservation[] toReturn = null;
+
             // First, list the instances for the configured account.
             DescribeInstancesRequest describeInstancesRequest =
                 new DescribeInstancesRequest()
@@ -100,6 +156,8 @@ namespace Meridian.AwsPasswordExtractor.Logic
                     describeInstancesResponse.NextToken;
             }
             while (describeInstancesResponse.NextToken != null);
+
+            toReturn = allReservations.ToArray();
 
             return toReturn;
         }

@@ -50,6 +50,7 @@ namespace Meridian.AwsPasswordExtractor.Console
             IExtractorManager extractorManager =
                 container.GetInstance<IExtractorManager>();
 
+            // TODO: Allow the pass-thru of AWS access keys.
             // TODO: Include logging/error handling.
             // Then extract instance detail.
             InstanceDetail[] instanceDetails =

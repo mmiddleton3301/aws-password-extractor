@@ -17,6 +17,15 @@ namespace Meridian.AwsPasswordExtractor.Logic.Models
     public class InstanceDetail
     {
         /// <summary>
+        /// Gets or sets the name of the instance.
+        /// </summary>
+        public string Name
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// Gets or sets the IP address of the instance.
         /// </summary>
         public IPAddress IPAddress
@@ -33,6 +42,23 @@ namespace Meridian.AwsPasswordExtractor.Logic.Models
         {
             get;
             set;
+        }
+
+        /// <summary>
+        /// Overrides <see cref="object.ToString()" />. 
+        /// </summary>
+        /// <returns>
+        /// A string that represents the current object.
+        /// </returns>
+        public override string ToString()
+        {
+            string toReturn =
+                $"Instance Detail (" +
+                $"Name = {this.Name}, " +
+                $"IPAddress = {IPAddress}" +
+                $")";
+
+            return toReturn;
         }
     }
 }
