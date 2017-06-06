@@ -7,6 +7,7 @@
 
 namespace Meridian.AwsPasswordExtractor.Logic.Models
 {
+    using System.Linq;
     using System.Net;
 
     /// <summary>
@@ -55,8 +56,19 @@ namespace Meridian.AwsPasswordExtractor.Logic.Models
             string toReturn =
                 $"Instance Detail (" +
                 $"Name = {this.Name}, " +
-                $"IPAddress = {IPAddress}" +
-                $")";
+                $"IPAddress = {IPAddress}";
+
+            if (!string.IsNullOrEmpty(this.Password))
+            {
+                string passMasked =
+                    string.Join(
+                        string.Empty,
+                        this.Password.ToArray().Select(x => "*").ToArray());
+
+                toReturn += $", Password = {passMasked}";
+            }
+
+            toReturn += $")";
 
             return toReturn;
         }

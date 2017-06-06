@@ -56,6 +56,7 @@ namespace Meridian.AwsPasswordExtractor.Console
             InstanceDetail[] instanceDetails =
                 extractorManager.ExtractDetails(
                     options.AwsRegion,
+                    options.PasswordEncryptionKeyFile,
                     options.RoleArn);
         }
     }

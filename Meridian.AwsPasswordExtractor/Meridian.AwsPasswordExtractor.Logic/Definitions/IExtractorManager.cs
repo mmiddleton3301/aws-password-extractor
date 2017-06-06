@@ -7,6 +7,7 @@
 
 namespace Meridian.AwsPasswordExtractor.Logic.Definitions
 {
+    using System.IO;
     using Meridian.AwsPasswordExtractor.Logic.Models;
 
     /// <summary>
@@ -21,6 +22,9 @@ namespace Meridian.AwsPasswordExtractor.Logic.Definitions
         /// <param name="region">
         /// The AWS region in which to execute AWS SDK methods against.
         /// </param>
+        /// <param name="passwordEncryptionKeyFile">
+        /// The location of the password encryption key file.
+        /// </param>
         /// <param name="roleArn">
         /// An IAM role ARN to assume prior to pulling back EC2
         /// <see cref="InstanceDetail" />. Optional.
@@ -28,6 +32,9 @@ namespace Meridian.AwsPasswordExtractor.Logic.Definitions
         /// <returns>
         /// An array of <see cref="InstanceDetail" /> instances. 
         /// </returns>
-        InstanceDetail[] ExtractDetails(string region, string roleArn);
+        InstanceDetail[] ExtractDetails(
+            string region,
+            FileInfo passwordEncryptionKeyFile,
+            string roleArn);
     }
 }

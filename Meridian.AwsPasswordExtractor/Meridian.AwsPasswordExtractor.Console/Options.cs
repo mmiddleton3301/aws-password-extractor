@@ -6,7 +6,8 @@
 // ----------------------------------------------------------------------------
 
 namespace Meridian.AwsPasswordExtractor.Console
-{
+{    
+    using System.IO;
     using CommandLine;
 
     /// <summary>
@@ -16,18 +17,6 @@ namespace Meridian.AwsPasswordExtractor.Console
     public class Options
     {
         /// <summary>
-        /// Gets or sets a role ARN to assume. Optional.
-        /// </summary>
-        [Option(
-            HelpText = "If assuming a particular role as part of your " +
-                "request, specify the role ARN with this option.")]
-        public string RoleArn
-        {
-            get;
-            set;
-        }
-
-        /// <summary>
         /// Gets or sets the AWS region in which to execute AWS SDK methods
         /// against.
         /// </summary>
@@ -36,6 +25,32 @@ namespace Meridian.AwsPasswordExtractor.Console
             HelpText = "The AWS region in which your instances reside. For " +
                 "example, \"eu-west-1\".")]
         public string AwsRegion
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the location of the password encryption key file.
+        /// </summary>
+        [Option(
+            Required = true,
+            HelpText = "The password encryption key file, used when " +
+            "originally spawning the EC2 instances. This is used in " +
+            "decrypting the password data pulled back from the API.")]
+        public FileInfo PasswordEncryptionKeyFile
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets a role ARN to assume. Optional.
+        /// </summary>
+        [Option(
+            HelpText = "If assuming a particular role as part of your " +
+                "request, specify the role ARN with this option.")]
+        public string RoleArn
         {
             get;
             set;

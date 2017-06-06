@@ -8,8 +8,10 @@
 namespace Meridian.AwsPasswordExtractor.Logic
 {
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using System.Net;
+    using System.Security.Cryptography;
     using Amazon;
     using Amazon.EC2;
     using Amazon.EC2.Model;
@@ -31,12 +33,20 @@ namespace Meridian.AwsPasswordExtractor.Logic
         private const int DescribeInstancesMaxResults = 10;
 
         /// <summary>
+        /// An instance of <see cref="IFileSystemProvider" />. 
+        /// </summary>
+        private readonly IFileSystemProvider fileSystemProvider;
+
+        /// <summary>
         /// Initialises a new instance of the <see cref="ExtractorManager" />
         /// class.
         /// </summary>
-        public ExtractorManager()
+        /// <param name="fileSystemProvider">
+        /// An instance of <see cref="IFileSystemProvider" />. 
+        /// </param>
+        public ExtractorManager(IFileSystemProvider fileSystemProvider)
         {
-            // Nothing for now...
+            this.fileSystemProvider = fileSystemProvider;
         }
 
         /// <summary>
@@ -44,6 +54,9 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// </summary>
         /// <param name="region">
         /// The AWS region in which to execute AWS SDK methods against.
+        /// </param>
+        /// <param name="passwordEncryptionKeyFile">
+        /// The location of the password encryption key file.
         /// </param>
         /// <param name="roleArn">
         /// An IAM role ARN to assume prior to pulling back EC2
@@ -54,6 +67,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// </returns>
         public InstanceDetail[] ExtractDetails(
             string region,
+            FileInfo passwordEncryptionKeyFile,
             string roleArn)
         {
             InstanceDetail[] toReturn = null;
@@ -87,77 +101,17 @@ namespace Meridian.AwsPasswordExtractor.Logic
                 .SelectMany(x => x.Instances)
                 .ToArray();
 
+            // Read the password encryption key.
+            string passwordEncryptionKey =
+                this.fileSystemProvider.ReadFileInfoAsString(
+                    passwordEncryptionKeyFile);
+
             toReturn = allInstances
-                .Select(this.ConvertInstanceToInstanceDetail)
+                .Select(x => this.ConvertInstanceToInstanceDetail(
+                    amazonEC2,
+                    passwordEncryptionKey,
+                    x))
                 .ToArray();
-
-            return toReturn;
-        }
-
-        /// <summary>
-        /// Converts an instance of <see cref="Instance" /> to
-        /// <see cref="InstanceDetail" />, so that the information can be used
-        /// in constructing a list of whatever format.  
-        /// </summary>
-        /// <param name="instance">
-        /// An instance of <see cref="Instance" />. 
-        /// </param>
-        /// <returns>
-        /// An instance of <see cref="InstanceDetail" />. 
-        /// </returns>
-        private InstanceDetail ConvertInstanceToInstanceDetail(
-            Instance instance)
-        {
-            InstanceDetail toReturn = new InstanceDetail()
-            {
-                IPAddress = IPAddress.Parse(instance.PrivateIpAddress)
-            };
-
-            // TODO: Investigate whether names are always stored in the tags?
-            Tag nameTag = instance.Tags.Single(x => x.Key == "Name");
-
-            toReturn.Name = nameTag.Value;
-
-            return toReturn;
-        }
-
-        /// <summary>
-        /// Fetches all of the <see cref="Reservation" />s from the configured 
-        /// </summary>
-        /// <param name="amazonEC2">
-        /// An instance of <see cref="IAmazonEC2" /> to use in communicating
-        /// with the AWS API.
-        /// </param>
-        /// <returns>
-        /// An array of <see cref="Reservation" /> instances.
-        /// </returns>
-        private Reservation[] GetRegionReservations(IAmazonEC2 amazonEC2)
-        {
-            Reservation[] toReturn = null;
-
-            // First, list the instances for the configured account.
-            DescribeInstancesRequest describeInstancesRequest =
-                new DescribeInstancesRequest()
-                {
-                    MaxResults = DescribeInstancesMaxResults
-                };
-
-            List<Reservation> allReservations = new List<Reservation>();
-            DescribeInstancesResponse describeInstancesResponse = null;
-            do
-            {
-                describeInstancesResponse =
-                    amazonEC2.DescribeInstances(describeInstancesRequest);
-
-                allReservations.AddRange(
-                    describeInstancesResponse.Reservations);
-
-                describeInstancesRequest.NextToken =
-                    describeInstancesResponse.NextToken;
-            }
-            while (describeInstancesResponse.NextToken != null);
-
-            toReturn = allReservations.ToArray();
 
             return toReturn;
         }
@@ -210,6 +164,132 @@ namespace Meridian.AwsPasswordExtractor.Logic
             toReturn = new AmazonEC2Client(
                 roleCreds,
                 amazonEC2Config);
+
+            return toReturn;
+        }
+
+        /// <summary>
+        /// Converts an instance of <see cref="Instance" /> to
+        /// <see cref="InstanceDetail" />, so that the information can be used
+        /// in constructing a list of whatever format.  
+        /// </summary>
+        /// <param name="amazonEC2">
+        /// An instance of <see cref="IAmazonEC2" />. 
+        /// </param>
+        /// <param name="passwordEncryptionKey">
+        /// The AWS password encryption key, used in decryption.
+        /// </param>
+        /// <param name="instance">
+        /// An instance of <see cref="Instance" />. 
+        /// </param>
+        /// <returns>
+        /// An instance of <see cref="InstanceDetail" />. 
+        /// </returns>
+        private InstanceDetail ConvertInstanceToInstanceDetail(
+            IAmazonEC2 amazonEC2,
+            string passwordEncryptionKey,
+            Instance instance)
+        {
+            InstanceDetail toReturn = new InstanceDetail()
+            {
+                IPAddress = IPAddress.Parse(instance.PrivateIpAddress)
+            };
+
+            // TODO: Investigate whether names are always stored in the tags?
+            Tag nameTag = instance.Tags.Single(x => x.Key == "Name");
+
+            toReturn.Name = nameTag.Value;
+
+            string instancePassword = this.GetInstancePassword(
+                amazonEC2,
+                passwordEncryptionKey,
+                instance.InstanceId);
+
+            toReturn.Password = instancePassword;
+
+            return toReturn;
+        }
+
+        /// <summary>
+        /// Gets a particular instance's password (or at least, the original
+        /// password assigned to the EC2 instance upon creation).
+        /// </summary>
+        /// <param name="amazonEC2">
+        /// An instance of <see cref="IAmazonEC2" />. 
+        /// </param>
+        /// <param name="passwordEncryptionKey">
+        /// The AWS password encryption key, used in decryption.
+        /// </param>
+        /// <param name="instanceId">
+        /// The id of the <see cref="Instance" /> to pull back a password for.
+        /// </param>
+        /// <returns>
+        /// The instance's password, as a <see cref="string" /> .
+        /// </returns>
+        private string GetInstancePassword(
+            IAmazonEC2 amazonEC2,
+            string passwordEncryptionKey,
+            string instanceId)
+        {
+            string toReturn = null;
+
+            GetPasswordDataRequest getPasswordDataRequest =
+                new GetPasswordDataRequest(instanceId);
+
+            GetPasswordDataResponse getPasswordDataResponse =
+                amazonEC2.GetPasswordData(getPasswordDataRequest);
+
+            try
+            {
+                toReturn = getPasswordDataResponse
+                    .GetDecryptedPassword(passwordEncryptionKey);
+            }
+            catch (CryptographicException)
+            {
+                // TODO: Log the fact that the decryption key seems to be
+                //       incorrect!
+            }
+
+            return toReturn;
+        }
+
+        /// <summary>
+        /// Fetches all of the <see cref="Reservation" />s from the configured 
+        /// </summary>
+        /// <param name="amazonEC2">
+        /// An instance of <see cref="IAmazonEC2" /> to use in communicating
+        /// with the AWS API.
+        /// </param>
+        /// <returns>
+        /// An array of <see cref="Reservation" /> instances.
+        /// </returns>
+        private Reservation[] GetRegionReservations(IAmazonEC2 amazonEC2)
+        {
+            Reservation[] toReturn = null;
+
+            // First, list the instances for the configured account.
+            DescribeInstancesRequest describeInstancesRequest =
+                new DescribeInstancesRequest()
+                {
+                    MaxResults = DescribeInstancesMaxResults
+                };
+
+            List<Reservation> allReservations = new List<Reservation>();
+            DescribeInstancesResponse describeInstancesResponse = null;
+            do
+            {
+                describeInstancesResponse =
+                    amazonEC2.DescribeInstances(describeInstancesRequest);
+
+                allReservations.AddRange(
+                    describeInstancesResponse.Reservations);
+
+                describeInstancesRequest.NextToken =
+                    describeInstancesResponse.NextToken;
+            }
+            while (describeInstancesResponse.NextToken != null);
+
+            toReturn = allReservations.ToArray();
 
             return toReturn;
         }
