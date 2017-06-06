@@ -50,9 +50,11 @@ namespace Meridian.AwsPasswordExtractor.Console
             IExtractorManager extractorManager =
                 container.GetInstance<IExtractorManager>();
 
+            // TODO: Include logging/error handling.
             // Then extract instance detail.
             InstanceDetail[] instanceDetails =
                 extractorManager.ExtractDetails(
+                    options.AwsRegion,
                     options.RoleArn);
         }
     }

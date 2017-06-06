@@ -18,6 +18,9 @@ namespace Meridian.AwsPasswordExtractor.Logic.Definitions
         /// Extracts information relating to EC2 instances for the configured
         /// AWS account, and returns the detail.
         /// </summary>
+        /// <param name="region">
+        /// The AWS region in which to execute AWS SDK methods against.
+        /// </param>
         /// <param name="roleArn">
         /// An IAM role ARN to assume prior to pulling back EC2
         /// <see cref="InstanceDetail" />. Optional.
@@ -25,6 +28,6 @@ namespace Meridian.AwsPasswordExtractor.Logic.Definitions
         /// <returns>
         /// An array of <see cref="InstanceDetail" /> instances. 
         /// </returns>
-        InstanceDetail[] ExtractDetails(string roleArn);
+        InstanceDetail[] ExtractDetails(string region, string roleArn);
     }
 }

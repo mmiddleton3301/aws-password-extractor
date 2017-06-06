@@ -18,10 +18,24 @@ namespace Meridian.AwsPasswordExtractor.Console
         /// <summary>
         /// Gets or sets a role ARN to assume. Optional.
         /// </summary>
-        [Option(HelpText =
-            "If assuming a particular role as part of your request, " +
-            "specify the role ARN with this option.")]
+        [Option(
+            HelpText = "If assuming a particular role as part of your " +
+                "request, specify the role ARN with this option.")]
         public string RoleArn
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the AWS region in which to execute AWS SDK methods
+        /// against.
+        /// </summary>
+        [Option(
+            Required = true,
+            HelpText = "The AWS region in which your instances reside. For " +
+                "example, \"eu-west-1\".")]
+        public string AwsRegion
         {
             get;
             set;

@@ -9,6 +9,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
 {
     using System.Collections.Generic;
     using System.Linq;
+    using Amazon;
     using Amazon.EC2;
     using Amazon.EC2.Model;
     using Amazon.SecurityToken;
@@ -40,6 +41,9 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// <summary>
         /// Implements <see cref="IExtractorManager.ExtractDetails()" />. 
         /// </summary>
+        /// <param name="region">
+        /// The AWS region in which to execute AWS SDK methods against.
+        /// </param>
         /// <param name="roleArn">
         /// An IAM role ARN to assume prior to pulling back EC2
         /// <see cref="InstanceDetail" />. Optional.
@@ -47,15 +51,20 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// <returns>
         /// An array of <see cref="InstanceDetail" /> instances. 
         /// </returns>
-        public InstanceDetail[] ExtractDetails(string roleArn)
+        public InstanceDetail[] ExtractDetails(
+            string region,
+            string roleArn)
         {
             InstanceDetail[] toReturn = null;
+
+            RegionEndpoint regionEndpoint =
+                RegionEndpoint.GetBySystemName(region);
 
             AmazonEC2Config amazonEC2Config = new AmazonEC2Config()
             {
                 // TODO: Will need to pass this in. Just want to test it works,
                 //       for now.
-                RegionEndpoint = Amazon.RegionEndpoint.EUWest1
+                RegionEndpoint = regionEndpoint
             };
 
             IAmazonEC2 amazonEC2 = null;
