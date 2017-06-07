@@ -78,13 +78,19 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// <param name="outputFile">
         /// The location of the output file.
         /// </param>
-        public void CreateOutputFile(
+        /// <returns>
+        /// Returns true if the process completed with success, otherwise
+        /// false.
+        /// </returns>
+        public bool CreateOutputFile(
             Tuple<string, string> awsAccessKeys,
             string region,
             FileInfo passwordEncryptionKeyFile,
             string roleArn,
             FileInfo outputFile)
         {
+            bool toReturn = false;
+
             try
             {
                 this.ExtractDetailsAndWriteInstanceDetailToOutputFile(
@@ -93,6 +99,8 @@ namespace Meridian.AwsPasswordExtractor.Logic
                     passwordEncryptionKeyFile,
                     roleArn,
                     outputFile);
+
+                toReturn = true;
             }
             catch (Exception ex)
             {
@@ -100,10 +108,11 @@ namespace Meridian.AwsPasswordExtractor.Logic
                 // an exception we have not expected.
                 // Either way, we want to log this as Fatal.
                 this.loggingProvider.Fatal(
-                    $"An unhandled {nameof(Exception)} was thrown! Detail " +
-                    $"included.",
+                    $"An {nameof(Exception)} was thrown! Detail included.",
                     ex);
             }
+
+            return toReturn;
         }
 
         /// <summary>
@@ -135,62 +144,59 @@ namespace Meridian.AwsPasswordExtractor.Logic
             string roleArn,
             FileInfo outputFile)
         {
-            bool argumentsValid = this.ValidateArguments(
+            this.ValidateArguments(
                 awsAccessKeys,
                 region,
                 passwordEncryptionKeyFile,
                 roleArn,
                 outputFile);
+            
+            // Make awsAccessKeys null if no explicit values were set.
+            awsAccessKeys =
+                string.IsNullOrEmpty(awsAccessKeys.Item1)
+                    &&
+                string.IsNullOrEmpty(awsAccessKeys.Item2)
+                    ?
+                null
+                    :
+                awsAccessKeys;
 
-            if (argumentsValid)
+            this.loggingProvider.Debug(
+                $"Pulling back {nameof(InstanceDetail)} for the specified " +
+                $"parameters...");
+
+            // TODO: Test/error scenarios.
+            // Then extract instance detail.
+            InstanceDetail[] instanceDetails =
+                this.instanceScanner.ExtractDetails(
+                    awsAccessKeys,
+                    region,
+                    passwordEncryptionKeyFile,
+                    roleArn);
+
+            this.loggingProvider.Info(
+                $"Number of {nameof(InstanceDetail)} instances retrieved - " +
+                $"{instanceDetails.Length}.");
+
+            if (instanceDetails.Length > 0)
             {
-                // Make awsAccessKeys null if no explicit values were set.
-                awsAccessKeys =
-                    string.IsNullOrEmpty(awsAccessKeys.Item1)
-                        &&
-                    string.IsNullOrEmpty(awsAccessKeys.Item2)
-                        ?
-                    null
-                        :
-                    awsAccessKeys;
-
                 this.loggingProvider.Debug(
-                    $"Pulling back {nameof(InstanceDetail)} for the " +
-                    $"specified parameters...");
+                    $"Exporting {nameof(InstanceDetail)} to output file " +
+                    $"\"{outputFile.FullName}\"...");
 
-                // TODO: Test/error scenarios.
-                // Then extract instance detail.
-                InstanceDetail[] instanceDetails =
-                    this.instanceScanner.ExtractDetails(
-                        awsAccessKeys,
-                        region,
-                        passwordEncryptionKeyFile,
-                        roleArn);
+                this.InstanceDetailToTextFile(instanceDetails, outputFile);
 
                 this.loggingProvider.Info(
-                    $"Number of {nameof(InstanceDetail)} instances " +
-                    $"retrieved - {instanceDetails.Length}.");
-
-                if (instanceDetails.Length > 0)
-                {
-                    this.loggingProvider.Debug(
-                        $"Exporting {nameof(InstanceDetail)} to output file " +
-                        $"\"{outputFile.FullName}\"...");
-
-                    this.InstanceDetailToTextFile(instanceDetails, outputFile);
-
-                    this.loggingProvider.Info(
-                        $"Export completed with success. Check " +
-                        $"\"{outputFile.FullName}\" for instance " +
-                        $"information.");
-                }
-                else
-                {
-                    this.loggingProvider.Warn(
-                        $"No instances could be found (although this may " +
-                        $"be expected). No output file will be " +
-                        $"composed/written to \"{outputFile.FullName}\".");
-                }
+                    $"Export completed with success. Check " +
+                    $"\"{outputFile.FullName}\" for instance " +
+                    $"information.");
+            }
+            else
+            {
+                this.loggingProvider.Warn(
+                    $"No instances could be found (although this may be " +
+                    $"expected). No output file will be composed/written " +
+                    $"to \"{outputFile.FullName}\".");
             }
         }
 
@@ -294,25 +300,21 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// <param name="outputFile">
         /// The location of the output file.
         /// </param>
-        /// <returns>
-        /// A <see cref="bool" /> value, indicating whether or not he arguments
-        /// are valid.
-        /// </returns>
-        private bool ValidateArguments(
+        private void ValidateArguments(
             Tuple<string, string> awsAccessKeys,
             string region,
             FileInfo passwordEncryptionKeyFile,
             string roleArn,
             FileInfo outputFile)
         {
-            bool toReturn = true;
+            bool argumentsValid = true;
 
             this.loggingProvider.Debug("Validating arguments...");
 
             // awsAccessKeys
             // For this param to be valid, either both values need to be
             // specified OR none at all.
-            toReturn =
+            argumentsValid =
                 (!string.IsNullOrEmpty(awsAccessKeys.Item1)
                     &&
                 !string.IsNullOrEmpty(awsAccessKeys.Item2))
@@ -321,34 +323,33 @@ namespace Meridian.AwsPasswordExtractor.Logic
                     &&
                 string.IsNullOrEmpty(awsAccessKeys.Item2));
 
-            if (!toReturn)
+            if (!argumentsValid)
             {
-                this.loggingProvider.Fatal(
+                throw new InvalidOperationException(
                     "If specifying AWS credentials explicitly, you must " +
                     "provide both the Access Key ID and Secret Access Key.");
             }
 
             // region - validated when injected into logic layer (if the
             //          region isn't valid, an exception will be thrown).
-            if (toReturn)
+            if (argumentsValid)
             {
                 // passwordEncryptionKeyFile - needs to exist.
                 //                             A required parameter.
-                toReturn = outputFile.Exists;
+                argumentsValid = outputFile.Exists;
 
-                if (!toReturn)
+                if (!argumentsValid)
                 {
-                    this.loggingProvider.Fatal(
+                    throw new FileLoadException(
                         $"The password encryption file located at: \"" +
                         $"{outputFile.FullName}\" does not exist.");
                 }
             }
 
             this.loggingProvider.Info(
-                $"Argument validation result = {toReturn}.");
+                $"Argument validation result = {argumentsValid}.");
 
             // roleArn - optional and also validated on the logic layer.
-            return toReturn;
         }
     }
 }

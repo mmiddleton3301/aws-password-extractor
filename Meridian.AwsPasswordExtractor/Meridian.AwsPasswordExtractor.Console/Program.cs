@@ -22,17 +22,38 @@ namespace Meridian.AwsPasswordExtractor.Console
     public class Program
     {
         /// <summary>
+        /// A <see cref="bool" /> value describing the outcome of the main
+        /// <see cref="IOutputFileGenerator.CreateOutputFile(Tuple{string, string}, string, System.IO.FileInfo, string, System.IO.FileInfo)" />
+        /// method.
+        /// </summary> 
+        private static bool executionSuccess;
+
+        /// <summary>
         /// The main entry point for the application.
         /// </summary>
         /// <param name="args">
         /// Any arguments passed to the executable upon calling.
         /// </param>
-        private static void Main(string[] args)
+        /// <returns>
+        /// An exit code. 0 stands for success, anything else is failure.
+        /// </returns>
+        private static int Main(string[] args)
         {
+            int toReturn = 0;
+
             ParserResult<Options> parseResult =
                 Parser.Default.ParseArguments<Options>(args);
 
             parseResult.WithParsed(CommandLineArgumentsParsed);
+
+            if (!executionSuccess)
+            {
+                // If exeuction wasn't a success, reflect this in the exit
+                // code.
+                toReturn = 1;
+            }
+
+            return toReturn;
         }
 
         /// <summary>
@@ -70,7 +91,7 @@ namespace Meridian.AwsPasswordExtractor.Console
             IOutputFileGenerator outputFileGenerator =
                 container.GetInstance<IOutputFileGenerator>();
 
-            outputFileGenerator.CreateOutputFile(
+            executionSuccess = outputFileGenerator.CreateOutputFile(
                 new Tuple<string, string>(
                     options.AccessKeyId,
                     options.SecretAccessKey),

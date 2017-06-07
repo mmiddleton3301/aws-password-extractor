@@ -58,8 +58,6 @@ namespace Meridian.AwsPasswordExtractor.Logic
             IFileSystemProvider fileSystemProvider,
             ILoggingProvider loggingProvider)
         {
-            // TODO: Inject somehow the AWS instances - as the AWS SDK seems to
-            //       be losely coupled.
             this.fileSystemProvider = fileSystemProvider;
             this.loggingProvider = loggingProvider;
         }

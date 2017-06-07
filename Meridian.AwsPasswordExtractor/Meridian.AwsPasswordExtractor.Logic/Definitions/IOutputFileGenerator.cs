@@ -37,7 +37,11 @@ namespace Meridian.AwsPasswordExtractor.Logic.Definitions
         /// <param name="outputFile">
         /// The location of the output file.
         /// </param>
-        void CreateOutputFile(
+        /// <returns>
+        /// Returns true if the process completed with success, otherwise
+        /// false.
+        /// </returns>
+        bool CreateOutputFile(
             Tuple<string, string> awsAccessKeys,
             string region,
             FileInfo passwordEncryptionKeyFile,
