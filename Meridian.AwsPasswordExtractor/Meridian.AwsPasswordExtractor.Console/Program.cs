@@ -32,9 +32,6 @@ namespace Meridian.AwsPasswordExtractor.Console
             ParserResult<Options> parseResult =
                 Parser.Default.ParseArguments<Options>(args);
 
-            // TODO: Create an option/switch "quiet", which only shows Errors
-            //       and Fatals.
-            //       Otherwise, it shows everything.
             parseResult.WithParsed(CommandLineArgumentsParsed);
         }
 

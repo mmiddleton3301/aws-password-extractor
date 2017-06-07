@@ -214,7 +214,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
                 $"{passwordEncryptionKeyFile.Length}.");
 
             this.loggingProvider.Debug(
-                $"Fetching passwords for all {toReturn.Length} " +
+                $"Fetching passwords for all {allInstances.Length} " +
                 $"{nameof(Instance)}(s)...");
 
             toReturn = allInstances

@@ -159,7 +159,6 @@ namespace Meridian.AwsPasswordExtractor.Logic
                     $"specified parameters...");
 
                 // TODO: Test/error scenarios.
-                // TODO: Include logging/error handling.
                 // Then extract instance detail.
                 InstanceDetail[] instanceDetails =
                     this.instanceScanner.ExtractDetails(
