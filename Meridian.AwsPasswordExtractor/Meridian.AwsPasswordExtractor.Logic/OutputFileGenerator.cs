@@ -77,11 +77,11 @@ namespace Meridian.AwsPasswordExtractor.Logic
         {
             // TODO: Some form of param validation.
             // TODO: Test/error scenarios.
-            // TODO: Allow the pass-thru of AWS access keys.
             // TODO: Include logging/error handling.
             // Then extract instance detail.
             InstanceDetail[] instanceDetails =
                 this.instanceScanner.ExtractDetails(
+                    awsAccessKeys,
                     region,
                     passwordEncryptionKeyFile,
                     roleArn);

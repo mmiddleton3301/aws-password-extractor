@@ -7,6 +7,7 @@
 
 namespace Meridian.AwsPasswordExtractor.Logic
 {
+    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -15,6 +16,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
     using Amazon;
     using Amazon.EC2;
     using Amazon.EC2.Model;
+    using Amazon.Runtime;
     using Amazon.SecurityToken;
     using Amazon.SecurityToken.Model;
     using Meridian.AwsPasswordExtractor.Logic.Definitions;
@@ -50,8 +52,15 @@ namespace Meridian.AwsPasswordExtractor.Logic
         }
 
         /// <summary>
-        /// Implements <see cref="IInstanceScanner.ExtractDetails()" />. 
+        /// Implements
+        /// <see cref="IInstanceScanner.ExtractDetails(Tuple{string, string}, string, FileInfo, string)" />. 
         /// </summary>
+        /// <param name="awsAccessKeys">
+        /// An instance of <see cref="Tuple{string, string}" /> containing
+        /// firstly the access key id, followed by the the secret access key.
+        /// If the variable is null, then credentials based authentication
+        /// needs to be used.
+        /// </param>
         /// <param name="region">
         /// The AWS region in which to execute AWS SDK methods against.
         /// </param>
@@ -66,11 +75,22 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// An array of <see cref="InstanceDetail" /> instances. 
         /// </returns>
         public InstanceDetail[] ExtractDetails(
+            Tuple<string, string> awsAccessKeys,
             string region,
             FileInfo passwordEncryptionKeyFile,
             string roleArn)
         {
             InstanceDetail[] toReturn = null;
+
+            // If an access key and secret key were passed in via the command
+            // line, use these details as a matter of priority.
+            AWSCredentials explicitCredentials = null;
+            if (awsAccessKeys != null)
+            {
+                explicitCredentials = new BasicAWSCredentials(
+                    awsAccessKeys.Item1,
+                    awsAccessKeys.Item2);
+            }
 
             RegionEndpoint regionEndpoint =
                 RegionEndpoint.GetBySystemName(region);
@@ -83,11 +103,21 @@ namespace Meridian.AwsPasswordExtractor.Logic
             IAmazonEC2 amazonEC2 = null;
             if (string.IsNullOrEmpty(roleArn))
             {
-                amazonEC2 = new AmazonEC2Client(amazonEC2Config);
+                if (explicitCredentials == null)
+                {
+                    amazonEC2 = new AmazonEC2Client(amazonEC2Config);
+                }
+                else
+                {
+                    amazonEC2 = new AmazonEC2Client(
+                        explicitCredentials,
+                        amazonEC2Config);
+                }
             }
             else
             {
                 amazonEC2 = this.AssumeRoleAndCreateEC2Client(
+                    explicitCredentials,
                     amazonEC2Config,
                     roleArn);
             }
@@ -118,6 +148,10 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// Constructs an <see cref="AmazonEC2Client" /> instance with the
         /// temporary details generated from role assumption.
         /// </summary>
+        /// <param name="explicitCredentials">
+        /// An instance of <see cref="AWSCredentials" /> containing explicitly
+        /// declared credentials (i.e. from the command line). Can be null.
+        /// </param>
         /// <param name="amazonEC2Config">
         /// An instance of <see cref="AmazonEC2Config" />. 
         /// </param>
@@ -128,6 +162,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// A configured instance of <see cref="AmazonEC2Client" />. 
         /// </returns>
         private AmazonEC2Client AssumeRoleAndCreateEC2Client(
+            AWSCredentials explicitCredentials,
             AmazonEC2Config amazonEC2Config,
             string roleArn)
         {
@@ -139,9 +174,24 @@ namespace Meridian.AwsPasswordExtractor.Logic
                     // Nothing for now...
                 };
 
-            IAmazonSecurityTokenService amazonSecurityTokenService =
-                new AmazonSecurityTokenServiceClient(
-                    amazonSecurityTokenServiceConfig);
+            IAmazonSecurityTokenService amazonSecurityTokenService = null;
+
+            // Explcit credentials supplied?
+            if (explicitCredentials == null)
+            {
+                // Nope. Use the credentials file.
+                amazonSecurityTokenService =
+                    new AmazonSecurityTokenServiceClient(
+                        amazonSecurityTokenServiceConfig);
+            }
+            else
+            {
+                // Yep.
+                amazonSecurityTokenService =
+                    new AmazonSecurityTokenServiceClient(
+                        explicitCredentials,
+                        amazonSecurityTokenServiceConfig);
+            }
 
             // Just use the latter part of the ARN as the session name.
             string roleSessionName = roleArn.Split('/')

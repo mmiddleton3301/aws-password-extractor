@@ -7,6 +7,7 @@
 
 namespace Meridian.AwsPasswordExtractor.Logic.Definitions
 {
+    using System;
     using System.IO;
     using Meridian.AwsPasswordExtractor.Logic.Models;
 
@@ -19,6 +20,12 @@ namespace Meridian.AwsPasswordExtractor.Logic.Definitions
         /// Extracts information relating to EC2 instances for the configured
         /// AWS account, and returns the detail.
         /// </summary>
+        /// <param name="awsAccessKeys">
+        /// An instance of <see cref="Tuple{string, string}" /> containing
+        /// firstly the access key id, followed by the the secret access key.
+        /// If the variable is null, then credentials based authentication
+        /// needs to be used.
+        /// </param>
         /// <param name="region">
         /// The AWS region in which to execute AWS SDK methods against.
         /// </param>
@@ -33,6 +40,7 @@ namespace Meridian.AwsPasswordExtractor.Logic.Definitions
         /// An array of <see cref="InstanceDetail" /> instances. 
         /// </returns>
         InstanceDetail[] ExtractDetails(
+            Tuple<string, string> awsAccessKeys,
             string region,
             FileInfo passwordEncryptionKeyFile,
             string roleArn);
