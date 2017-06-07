@@ -7,6 +7,7 @@
 
 namespace Meridian.AwsPasswordExtractor.Logic
 {
+    using System;
     using System.IO;
     using Meridian.AwsPasswordExtractor.Logic.Definitions;
 
@@ -39,6 +40,28 @@ namespace Meridian.AwsPasswordExtractor.Logic
             }
 
             return toReturn;
+        }
+
+        /// <summary>
+        /// Implements
+        /// <see cref="IFileSystemProvider.WriteStringToFileInfo(FileInfo, string)" />. 
+        /// </summary>
+        /// <param name="fileInfo">
+        /// An instance of <see cref="FileInfo" /> describing where to write
+        /// the <see cref="string" /> value to. 
+        /// </param>
+        /// <param name="toWrite">
+        /// A <see cref="string" /> value. 
+        /// </param>
+        public void WriteStringToFileInfo(FileInfo fileInfo, string toWrite)
+        {
+            using (FileStream fileStream = fileInfo.Open(FileMode.Create))
+            {
+                using (StreamWriter streamWriter = new StreamWriter(fileStream))
+                {
+                    streamWriter.Write(toWrite);
+                }
+            }
         }
     }
 }
