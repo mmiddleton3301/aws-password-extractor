@@ -17,6 +17,38 @@ namespace Meridian.AwsPasswordExtractor.Console
     public class Options
     {
         /// <summary>
+        /// Gets or sets the AWS access key.
+        /// If specified, then <see cref="Options.SecretAccessKey" /> also
+        /// needs to be specified. 
+        /// Takes precedence over any AWS credentials file that may be present
+        /// in the local Windows user profile file system.
+        /// </summary>
+        [Option(
+            HelpText = "If not using a credentials file, the AWS access key " +
+                "ID.")]
+        public string AccessKeyId
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets the AWS secret access key.
+        /// If specified, then <see cref="Options.AccessKeyId" /> also
+        /// needs to be specified.
+        /// Takes precedence over any AWS credentials file that may be present
+        /// in the local Windows user profile file system.
+        /// </summary>
+        [Option(
+            HelpText = "If not using a credentials file, the secret access " +
+                "key.")]
+        public string SecretAccessKey
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
         /// Gets or sets the AWS region in which to execute AWS SDK methods
         /// against.
         /// </summary>

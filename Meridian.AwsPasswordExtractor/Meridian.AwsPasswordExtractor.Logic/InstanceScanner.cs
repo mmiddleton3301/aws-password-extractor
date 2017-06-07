@@ -77,8 +77,6 @@ namespace Meridian.AwsPasswordExtractor.Logic
 
             AmazonEC2Config amazonEC2Config = new AmazonEC2Config()
             {
-                // TODO: Will need to pass this in. Just want to test it works,
-                //       for now.
                 RegionEndpoint = regionEndpoint
             };
 
@@ -246,6 +244,8 @@ namespace Meridian.AwsPasswordExtractor.Logic
             }
             catch (CryptographicException)
             {
+                // We still want to carry on if we can't decrypt the password,
+                // but...
                 // TODO: Log the fact that the decryption key seems to be
                 //       incorrect!
             }

@@ -7,6 +7,7 @@
 
 namespace Meridian.AwsPasswordExtractor.Logic
 {
+    using System;
     using System.IO;
     using System.Text;
     using Meridian.AwsPasswordExtractor.Logic.Definitions;
@@ -47,8 +48,13 @@ namespace Meridian.AwsPasswordExtractor.Logic
 
         /// <summary>
         /// Implements
-        /// <see cref="IOutputFileGenerator.CreateOutputFile(string, FileInfo, string, FileInfo)" />. 
+        /// <see cref="IOutputFileGenerator.CreateOutputFile(Tuple{string, string} string, FileInfo, string, FileInfo)" />. 
         /// </summary>
+        /// <param name="awsAccessKeys">
+        /// An instance of <see cref="Tuple{string, string}" /> containing
+        /// firstly the access key id, followed by the the secret access key.
+        /// Either value can be null.
+        /// </param>
         /// <param name="region">
         /// The AWS region in which to execute AWS SDK methods against.
         /// </param>
@@ -63,11 +69,14 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// The location of the output file.
         /// </param>
         public void CreateOutputFile(
+            Tuple<string, string> awsAccessKeys,
             string region,
             FileInfo passwordEncryptionKeyFile,
             string roleArn,
             FileInfo outputFile)
         {
+            // TODO: Some form of param validation.
+            // TODO: Test/error scenarios.
             // TODO: Allow the pass-thru of AWS access keys.
             // TODO: Include logging/error handling.
             // Then extract instance detail.

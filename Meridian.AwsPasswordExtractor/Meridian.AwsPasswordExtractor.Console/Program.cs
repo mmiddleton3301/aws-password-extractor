@@ -7,6 +7,7 @@
 
 namespace Meridian.AwsPasswordExtractor.Console
 {
+    using System;
     using CommandLine;
     using Meridian.AwsPasswordExtractor.Logic.Definitions;
     using StructureMap;
@@ -50,6 +51,9 @@ namespace Meridian.AwsPasswordExtractor.Console
                 container.GetInstance<IOutputFileGenerator>();
 
             outputFileGenerator.CreateOutputFile(
+                new Tuple<string, string>(
+                    options.AccessKeyId,
+                    options.SecretAccessKey),
                 options.AwsRegion,
                 options.PasswordEncryptionKeyFile,
                 options.RoleArn,
