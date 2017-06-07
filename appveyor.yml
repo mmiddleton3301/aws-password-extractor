@@ -1,0 +1,23 @@
+# -----------------------------------------------------------------------------
+# <copyright file="appveyor.yml" company="MTCS (Matt Middleton)">
+# Copyright (c) Meridian Technology Consulting Services (Matt Middleton).
+# All rights reserved.
+# </copyright>
+# -----------------------------------------------------------------------------
+
+# Configuration
+configuration: release
+
+# Before Build Config
+before_build:
+  - nuget restore Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.sln
+
+# Build Config
+build:
+  project: Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.sln
+
+# After Build Config
+after_build:
+- cmd: |
+    7z a Meridian.AwsPasswordExtractor.zip %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\bin\Release\*.*
+    AppVeyor PushArtifact Meridian.AwsPasswordExtractor.zip -DeploymentName "Meridian.AwsPasswordExtractor Binaries"
