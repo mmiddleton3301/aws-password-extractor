@@ -10,6 +10,9 @@ namespace Meridian.AwsPasswordExtractor.Console
     using System;
     using CommandLine;
     using Meridian.AwsPasswordExtractor.Logic.Definitions;
+    using NLog;
+    using NLog.Config;
+    using NLog.Targets;
     using StructureMap;
 
     /// <summary>
@@ -49,6 +52,23 @@ namespace Meridian.AwsPasswordExtractor.Console
             Registry registry = new Registry();
             Container container = new Container(registry);
 
+            string logLevelStr = options.Verbosity.ToString();
+            LogLevel logLevel = LogLevel.FromString(logLevelStr);
+
+            // Get the default NLog configuration - i.e. the one declared
+            // in Nlog.config.
+            LoggingConfiguration loggingConfiguration =
+                LogManager.Configuration;
+
+            // Add a rule for each target, based on the input Verbosity level.
+            LoggingRule loggingRule = null;
+            foreach (Target target in loggingConfiguration.AllTargets)
+            {
+                loggingRule = new LoggingRule("*", logLevel, target);
+
+                loggingConfiguration.LoggingRules.Add(loggingRule);
+            }
+            
             // Get an instance.
             IOutputFileGenerator outputFileGenerator =
                 container.GetInstance<IOutputFileGenerator>();

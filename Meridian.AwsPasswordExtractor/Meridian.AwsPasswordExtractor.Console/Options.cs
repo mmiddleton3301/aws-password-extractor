@@ -103,13 +103,13 @@ namespace Meridian.AwsPasswordExtractor.Console
 
         /// <summary>
         /// Gets or sets a logging level to use. Optional - default value is
-        /// <see cref="VerbosityOption.Error" />. 
+        /// <see cref="VerbosityOption.Warn" />. 
         /// </summary>
         [Option(
             HelpText = "Specify the verbosity of output from the " +
                 "application. Valid options are: \"Debug\", \"Info\", " +
                 "\"Warn\", \"Error\", \"Fatal\" or \"Off\".",
-            Default = VerbosityOption.Error)]
+            Default = VerbosityOption.Warn)]
         public VerbosityOption Verbosity
         {
             get;

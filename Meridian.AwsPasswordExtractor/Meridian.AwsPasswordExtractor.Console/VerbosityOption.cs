@@ -18,31 +18,31 @@ namespace Meridian.AwsPasswordExtractor.Console
         /// <summary>
         /// The verbosity option "Off".
         /// </summary>
-        Off,
+        Off = 1,
 
         /// <summary>
         /// The verbosity option "Debug".
         /// </summary>
-        Debug,
+        Debug = 2,
 
         /// <summary>
         /// The verbosity option "Info".
         /// </summary>
-        Info,
+        Info = 3,
 
         /// <summary>
         /// The verbosity option "Warn".
         /// </summary>
-        Warn,
+        Warn = 4,
 
         /// <summary>
         /// The verbosity option "Error".
         /// </summary>
-        Error,
+        Error = 5,
 
         /// <summary>
         /// The verbosity option "Fatal".
         /// </summary>
-        Fatal
+        Fatal = 6
     }
 }

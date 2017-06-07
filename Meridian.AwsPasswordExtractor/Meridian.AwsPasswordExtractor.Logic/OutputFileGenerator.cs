@@ -104,6 +104,10 @@ namespace Meridian.AwsPasswordExtractor.Logic
                         :
                     awsAccessKeys;
 
+                this.loggingProvider.Debug(
+                    $"Pulling back {nameof(InstanceDetail)} for the " +
+                    $"specified parameters...");
+
                 // TODO: Test/error scenarios.
                 // TODO: Include logging/error handling.
                 // Then extract instance detail.
@@ -114,9 +118,29 @@ namespace Meridian.AwsPasswordExtractor.Logic
                         passwordEncryptionKeyFile,
                         roleArn);
 
+                this.loggingProvider.Info(
+                    $"Number of {nameof(InstanceDetail)} instances " +
+                    $"retrieved - {instanceDetails.Length}.");
+
                 if (instanceDetails.Length > 0)
                 {
+                    this.loggingProvider.Debug(
+                        $"Exporting {nameof(InstanceDetail)} to output file " +
+                        $"\"{outputFile.FullName}\"...");
+
                     this.InstanceDetailToTextFile(instanceDetails, outputFile);
+
+                    this.loggingProvider.Info(
+                        $"Export completed with success. Check " +
+                        $"\"{outputFile.FullName}\" for instance " +
+                        $"information.");
+                }
+                else
+                {
+                    this.loggingProvider.Warn(
+                        $"No instances could be found (although this may " +
+                        $"be expected). No output file will be " +
+                        $"composed/written to \"{outputFile.FullName}\".");
                 }
             }
         }
@@ -137,6 +161,11 @@ namespace Meridian.AwsPasswordExtractor.Logic
             InstanceDetail[] instanceDetails,
             FileInfo outputFile)
         {
+            this.loggingProvider.Debug(
+                $"Composing output file containing {instanceDetails.Length} " +
+                $"{nameof(InstanceDetail)} instances before writing to " +
+                $"\"{outputFile.FullName}\"...");
+
             // Then, save it to the output file. Just text file for now.
             // TODO: Terminals favourite export.
             StringBuilder stringBuilder = new StringBuilder();
@@ -156,6 +185,9 @@ namespace Meridian.AwsPasswordExtractor.Logic
             {
                 instanceDetail = instanceDetails[i];
 
+                this.loggingProvider.Debug(
+                    $"Composing detail for \"{instanceDetail}\"...");
+
                 stringBuilder.AppendLine(
                     $"{(i + 1).ToString(new string('0', padding))}.\t" +
                     $"{nameof(instanceDetail.Name)}: " +
@@ -174,11 +206,21 @@ namespace Meridian.AwsPasswordExtractor.Logic
                 }
 
                 stringBuilder.AppendLine();
+
+                this.loggingProvider.Info(
+                    $"Finished composing detail for \"{instanceDetail}\".");
             }
+
+            this.loggingProvider.Debug(
+                $"Composing of output file content complete. Writing to " +
+                $"output file location (\"{outputFile.FullName}\")...");
 
             this.fileSystemProvider.WriteStringToFileInfo(
                 outputFile,
                 stringBuilder.ToString());
+
+            this.loggingProvider.Info(
+                $"Write to \"{outputFile.FullName}\" complete.");
         }
 
         /// <summary>
@@ -253,7 +295,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
                 }
             }
 
-            this.loggingProvider.Debug(
+            this.loggingProvider.Info(
                 $"Argument validation result = {toReturn}.");
 
             // roleArn - optional and also validated on the logic layer.

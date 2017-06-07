@@ -9,7 +9,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 
 // Assembly info.
-[assembly: AssemblyTitle("AWS Password Extractor Console")]
+[assembly: AssemblyTitle("AWS Password Extractor Console Application")]
 [assembly: AssemblyDescription("The console application host for the AWS Password Extractor.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Meridian Technology Consulting Services (Matt Middleton)")]
