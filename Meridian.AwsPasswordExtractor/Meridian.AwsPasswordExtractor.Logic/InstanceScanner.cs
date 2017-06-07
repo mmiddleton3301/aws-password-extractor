@@ -40,17 +40,28 @@ namespace Meridian.AwsPasswordExtractor.Logic
         private readonly IFileSystemProvider fileSystemProvider;
 
         /// <summary>
+        /// An instance of <see cref="ILoggingProvider" />. 
+        /// </summary>
+        private readonly ILoggingProvider loggingProvider;
+
+        /// <summary>
         /// Initialises a new instance of the <see cref="InstanceScanner" />
         /// class.
         /// </summary>
         /// <param name="fileSystemProvider">
         /// An instance of <see cref="IFileSystemProvider" />. 
         /// </param>
-        public InstanceScanner(IFileSystemProvider fileSystemProvider)
+        /// <param name="loggingProvider">
+        /// An instance of <see cref="ILoggingProvider" />. 
+        /// </param>
+        public InstanceScanner(
+            IFileSystemProvider fileSystemProvider,
+            ILoggingProvider loggingProvider)
         {
             // TODO: Inject somehow the AWS instances - as the AWS SDK seems to
             //       be losely coupled.
             this.fileSystemProvider = fileSystemProvider;
+            this.loggingProvider = loggingProvider;
         }
 
         /// <summary>
@@ -89,13 +100,38 @@ namespace Meridian.AwsPasswordExtractor.Logic
             AWSCredentials explicitCredentials = null;
             if (awsAccessKeys != null)
             {
+                this.loggingProvider.Info(
+                    $"Explicit credentials provided. Access key ID: " +
+                    $"\"{awsAccessKeys.Item1}\".");
+
                 explicitCredentials = new BasicAWSCredentials(
                     awsAccessKeys.Item1,
                     awsAccessKeys.Item2);
             }
+            else
+            {
+                this.loggingProvider.Info(
+                    $"No explicit credentials provided. Instead, the " +
+                    $"credentials file will be used.");
+            }
+
+            this.loggingProvider.Debug(
+                $"Parsing the provided {nameof(RegionEndpoint)}...");
 
             RegionEndpoint regionEndpoint =
                 RegionEndpoint.GetBySystemName(region);
+
+            if (regionEndpoint.DisplayName == "Unknown")
+            {
+                throw new InvalidDataException(
+                    $"The specified AWS region is unknown. Please specify a " + 
+                    $"valid region, for example: " +
+                    $"\"{RegionEndpoint.EUWest2.SystemName}\".");
+            }
+
+            this.loggingProvider.Info(
+                $"{nameof(RegionEndpoint)} parsed: " +
+                $"{regionEndpoint.DisplayName}.");
 
             AmazonEC2Config amazonEC2Config = new AmazonEC2Config()
             {
@@ -105,12 +141,27 @@ namespace Meridian.AwsPasswordExtractor.Logic
             IAmazonEC2 amazonEC2 = null;
             if (string.IsNullOrEmpty(roleArn))
             {
+                this.loggingProvider.Debug(
+                    "No role ARN was provided. Therefore, the API will be " +
+                    "called with credentials either provided explicitly, or " +
+                    "stored in the credentials file.");
+
                 if (explicitCredentials == null)
                 {
+                    this.loggingProvider.Debug(
+                        $"No explicit credentials were provided. A " +
+                        $"{nameof(AmazonEC2Client)} will be generated using " +
+                        $"the credentials in the credentials file...");
+
                     amazonEC2 = new AmazonEC2Client(amazonEC2Config);
                 }
                 else
                 {
+                    this.loggingProvider.Debug(
+                        $"Explicit credentials were provided. The " +
+                        $"{nameof(AmazonEC2Client)} will be generated using " +
+                        $"these explicit credentials.");
+
                     amazonEC2 = new AmazonEC2Client(
                         explicitCredentials,
                         amazonEC2Config);
@@ -118,23 +169,53 @@ namespace Meridian.AwsPasswordExtractor.Logic
             }
             else
             {
+                this.loggingProvider.Debug(
+                    $"Role ARN provided: \"{roleArn}\". Credentials will be " +
+                    $"requested for this role in order to create the " +
+                    $"{nameof(AmazonEC2Client)}.");
+
                 amazonEC2 = this.AssumeRoleAndCreateEC2Client(
                     explicitCredentials,
                     amazonEC2Config,
                     roleArn);
             }
 
+            this.loggingProvider.Info($"{nameof(AmazonEC2Client)} created.");
+
+            this.loggingProvider.Debug(
+                $"Pulling back all available {nameof(Reservation)} " +
+                $"instances...");
+
             Reservation[] allReservations =
                 this.GetRegionReservations(amazonEC2);
+
+            this.loggingProvider.Info(
+                $"{allReservations} {nameof(Reservation)}(s) returned. " +
+                $"Selecting out all {nameof(Instance)}(s)...");
 
             Instance[] allInstances = allReservations
                 .SelectMany(x => x.Instances)
                 .ToArray();
 
+            this.loggingProvider.Info(
+                $"{allInstances.Length} {nameof(Instance)}(s) selected.");
+
+            this.loggingProvider.Debug(
+                $"Reading the password encryption key into memory " +
+                $"(located at \"{passwordEncryptionKeyFile.FullName}\")...");
+
             // Read the password encryption key.
             string passwordEncryptionKey =
                 this.fileSystemProvider.ReadFileInfoAsString(
                     passwordEncryptionKeyFile);
+
+            this.loggingProvider.Info(
+                $"Password encryption key read into memory - length: " +
+                $"{passwordEncryptionKeyFile.Length}.");
+
+            this.loggingProvider.Debug(
+                $"Fetching passwords for all {toReturn.Length} " +
+                $"{nameof(Instance)}(s)...");
 
             toReturn = allInstances
                 .Select(x => this.ConvertInstanceToInstanceDetail(
@@ -142,6 +223,10 @@ namespace Meridian.AwsPasswordExtractor.Logic
                     passwordEncryptionKey,
                     x))
                 .ToArray();
+
+            this.loggingProvider.Info(
+                $"Password extraction complete for {toReturn.Length} " +
+                $"{nameof(Instance)}(s).");
 
             return toReturn;
         }
@@ -181,6 +266,12 @@ namespace Meridian.AwsPasswordExtractor.Logic
             // Explcit credentials supplied?
             if (explicitCredentials == null)
             {
+                this.loggingProvider.Debug(
+                    $"No explicit credentials provided. Creating an " +
+                    $"instance of the " +
+                    $"{nameof(AmazonSecurityTokenServiceClient)} using " +
+                    "credentials stored in the credentials file...");
+
                 // Nope. Use the credentials file.
                 amazonSecurityTokenService =
                     new AmazonSecurityTokenServiceClient(
@@ -188,6 +279,11 @@ namespace Meridian.AwsPasswordExtractor.Logic
             }
             else
             {
+                this.loggingProvider.Debug(
+                    $"Explicit credentials provided. Creating an instance " +
+                    $"of the {nameof(AmazonSecurityTokenServiceClient)} " +
+                    $"using these details...");
+
                 // Yep.
                 amazonSecurityTokenService =
                     new AmazonSecurityTokenServiceClient(
@@ -195,9 +291,20 @@ namespace Meridian.AwsPasswordExtractor.Logic
                         amazonSecurityTokenServiceConfig);
             }
 
+            this.loggingProvider.Info(
+                $"Instance of {nameof(AmazonSecurityTokenServiceClient)} " +
+                $"established.");
+
+            this.loggingProvider.Debug(
+                $"Parsing role ARN \"{roleArn}\" to create the session " +
+                $"name...");
+
             // Just use the latter part of the ARN as the session name.
             string roleSessionName = roleArn.Split('/')
                 .Last();
+
+            this.loggingProvider.Info(
+                $"Session name created from ARN: \"{roleSessionName}\".");
 
             AssumeRoleRequest assumeRoleRequest = new AssumeRoleRequest()
             {
@@ -205,11 +312,21 @@ namespace Meridian.AwsPasswordExtractor.Logic
                 RoleSessionName = roleSessionName
             };
 
+            this.loggingProvider.Debug(
+                $"Pulling back credentials from " +
+                $"{nameof(AmazonSecurityTokenServiceClient)} by assuming " +
+                $"specified role...");
+
             // Get the temporary credentials using the specified role.
             AssumeRoleResponse assumeRoleResponse =
                 amazonSecurityTokenService.AssumeRole(assumeRoleRequest);
 
             Credentials roleCreds = assumeRoleResponse.Credentials;
+
+            this.loggingProvider.Info(
+                $"Credentials returned. Access ID: " +
+                $"\"{roleCreds.AccessKeyId}\". Returning " +
+                $"an instance of {nameof(AmazonEC2Client)}.");
 
             toReturn = new AmazonEC2Client(
                 roleCreds,
@@ -240,7 +357,13 @@ namespace Meridian.AwsPasswordExtractor.Logic
             string passwordEncryptionKey,
             Instance instance)
         {
-            InstanceDetail toReturn = new InstanceDetail()
+            InstanceDetail toReturn = null;
+
+            this.loggingProvider.Debug(
+                $"Constructing {nameof(InstanceDetail)} instance from EC2 " +
+                $"{nameof(Instance)}...");
+
+            toReturn = new InstanceDetail()
             {
                 IPAddress = IPAddress.Parse(instance.PrivateIpAddress)
             };
@@ -256,6 +379,9 @@ namespace Meridian.AwsPasswordExtractor.Logic
                 instance.InstanceId);
 
             toReturn.Password = instancePassword;
+
+            this.loggingProvider.Info(
+                $"{nameof(InstanceDetail)} constructed: {toReturn}.");
 
             return toReturn;
         }
@@ -283,23 +409,41 @@ namespace Meridian.AwsPasswordExtractor.Logic
         {
             string toReturn = null;
 
+            this.loggingProvider.Debug(
+                $"Requesitng encrypted password data from " +
+                $"{nameof(Instance)} ID \"{instanceId}\"...");
+
             GetPasswordDataRequest getPasswordDataRequest =
                 new GetPasswordDataRequest(instanceId);
 
             GetPasswordDataResponse getPasswordDataResponse =
                 amazonEC2.GetPasswordData(getPasswordDataRequest);
 
+            this.loggingProvider.Info(
+                $"Password data returned for {nameof(Instance)} ID " +
+                $"\"{instanceId}\".");
+                
             try
             {
+                this.loggingProvider.Debug(
+                    $"Using password encryption key to decrypt password " +
+                    $"for {nameof(Instance)} ID \"{instanceId}\"...");
+
                 toReturn = getPasswordDataResponse
                     .GetDecryptedPassword(passwordEncryptionKey);
+
+                this.loggingProvider.Info(
+                    $"Password for {nameof(Instance)} ID \"{instanceId}\" " +
+                    $"decrypted with success.");
             }
             catch (CryptographicException)
             {
                 // We still want to carry on if we can't decrypt the password,
                 // but...
-                // TODO: Log the fact that the decryption key seems to be
-                //       incorrect!
+                this.loggingProvider.Error(
+                    $"Could not decrypt password for {nameof(Instance)} " +
+                    $"ID \"{instanceId}\"! Are you sure that the password " +
+                    $"encryption key is correct? Returning null.");
             }
 
             return toReturn;
@@ -328,13 +472,37 @@ namespace Meridian.AwsPasswordExtractor.Logic
 
             List<Reservation> allReservations = new List<Reservation>();
             DescribeInstancesResponse describeInstancesResponse = null;
+
+            this.loggingProvider.Debug(
+                $"Pulling back {nameof(Reservation)}(s) in blocks of " +
+                $"{DescribeInstancesMaxResults}.");
+
+            string nextTokenStr = null;
             do
             {
+                this.loggingProvider.Debug(
+                    $"Executing {nameof(AmazonEC2Client)}." +
+                    $"{nameof(amazonEC2.DescribeInstances)}...");
+
                 describeInstancesResponse =
                     amazonEC2.DescribeInstances(describeInstancesRequest);
 
+                this.loggingProvider.Info(
+                    $"{describeInstancesResponse.Reservations.Count()} " +
+                    $"{nameof(Reservation)}(s) returned.");
+
                 allReservations.AddRange(
                     describeInstancesResponse.Reservations);
+
+                nextTokenStr =
+                    string.IsNullOrEmpty(describeInstancesResponse.NextToken)
+                            ?
+                        "null! Dropping out of loop."
+                            :
+                        $"{describeInstancesResponse.NextToken}.";
+
+                this.loggingProvider.Info(
+                    $"Next token is: {nextTokenStr}");
 
                 describeInstancesRequest.NextToken =
                     describeInstancesResponse.NextToken;
@@ -342,6 +510,10 @@ namespace Meridian.AwsPasswordExtractor.Logic
             while (describeInstancesResponse.NextToken != null);
 
             toReturn = allReservations.ToArray();
+
+            this.loggingProvider.Info(
+                $"Returning {toReturn.Length} {nameof(Reservation)} " +
+                $"instance(s).");
 
             return toReturn;
         }

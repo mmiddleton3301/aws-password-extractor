@@ -85,6 +85,56 @@ namespace Meridian.AwsPasswordExtractor.Logic
             string roleArn,
             FileInfo outputFile)
         {
+            try
+            {
+                this.ExtractDetailsAndWriteInstanceDetailToOutputFile(
+                    awsAccessKeys,
+                    region,
+                    passwordEncryptionKeyFile,
+                    roleArn,
+                    outputFile);
+            }
+            catch (Exception ex)
+            {
+                // An exception we have either thrown intentionally, or
+                // an exception we have not expected.
+                // Either way, we want to log this as Fatal.
+                this.loggingProvider.Fatal(
+                    $"An unhandled {nameof(Exception)} was thrown! Detail " +
+                    $"included.",
+                    ex);
+            }
+        }
+
+        /// <summary>
+        /// Private entry point for the class, sans any unhandled exception
+        /// handling.
+        /// </summary>
+        /// <param name="awsAccessKeys">
+        /// An instance of <see cref="Tuple{string, string}" /> containing
+        /// firstly the access key id, followed by the the secret access key.
+        /// Either value can be null.
+        /// </param>
+        /// <param name="region">
+        /// The AWS region in which to execute AWS SDK methods against.
+        /// </param>
+        /// <param name="passwordEncryptionKeyFile">
+        /// The location of the password encryption key file.
+        /// </param>
+        /// <param name="roleArn">
+        /// An IAM role ARN to assume prior to pulling back EC2
+        /// <see cref="InstanceDetail" />. Optional.
+        /// </param>
+        /// <param name="outputFile">
+        /// The location of the output file.
+        /// </param>
+        private void ExtractDetailsAndWriteInstanceDetailToOutputFile(
+            Tuple<string, string> awsAccessKeys,
+            string region,
+            FileInfo passwordEncryptionKeyFile,
+            string roleArn,
+            FileInfo outputFile)
+        {
             bool argumentsValid = this.ValidateArguments(
                 awsAccessKeys,
                 region,
@@ -259,7 +309,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
             bool toReturn = true;
 
             this.loggingProvider.Debug("Validating arguments...");
-            
+
             // awsAccessKeys
             // For this param to be valid, either both values need to be
             // specified OR none at all.
