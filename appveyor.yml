@@ -19,6 +19,6 @@ build:
 # After Build Config
 after_build:
 - cmd: |
-	xcopy /s %APPVEYOR_BUILD_FOLDER%\Licences %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\bin\Release\
+    xcopy /s %APPVEYOR_BUILD_FOLDER%\Licences %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\bin\Release\
     7z a Meridian.AwsPasswordExtractor.zip %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\bin\Release\*.*
     AppVeyor PushArtifact Meridian.AwsPasswordExtractor.zip -DeploymentName "Meridian.AwsPasswordExtractor Binaries"
