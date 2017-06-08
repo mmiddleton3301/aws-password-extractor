@@ -23,3 +23,15 @@ after_build:
     copy %APPVEYOR_BUILD_FOLDER%\LICENCE.md %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\bin\Release\aws-pwe-LICENCE.txt
     7z a Meridian.AwsPasswordExtractor.zip %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\bin\Release\*.*
     AppVeyor PushArtifact Meridian.AwsPasswordExtractor.zip -DeploymentName "Meridian.AwsPasswordExtractor Binaries"
+
+deploy:
+  release: 'Version $(appveyor_repo_tag_name)'
+  provider: GitHub
+  auth_token:
+    secure: 6Jdx64JxZkbgPpzuaR8phUjNejNNf88URwn62+9KLbRKcnhQ7EgTqNurSikB/5YG
+  artifact: /.*\.zip/
+  draft: false
+  prerelease: false
+  on:
+    branch: master
+    appveyor_repo_tag: true
