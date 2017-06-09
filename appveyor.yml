@@ -30,6 +30,7 @@ deploy:
   auth_token:
     secure: 6Jdx64JxZkbgPpzuaR8phUjNejNNf88URwn62+9KLbRKcnhQ7EgTqNurSikB/5YG
   artifact: /.*\.zip/
+  tag: $(appveyor_repo_tag_name)
   draft: false
   prerelease: false
   on:
