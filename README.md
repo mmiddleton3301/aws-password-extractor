@@ -11,7 +11,7 @@ A console application (and C# library) designed to pull back all AWS EC2 instanc
 - Zips available via GitHub releases (when I can be bothered to figure out how to push releases to GitHub from AppVeyor);
 - Download via [chocolately](https://chocolatey.org/).
 
-# Usage
+## Usage
 Simply invoke `aws-pwe` to view the options available:
 
     --accesskeyid                  If not using a credentials file, the AWS access key ID.
@@ -33,10 +33,10 @@ Simply invoke `aws-pwe` to view the options available:
     --version                      Display version information.
     
 
-## `.credentials` file
+### `.credentials` file
 It is reccomended that you create a `.credentials` file in your Windows user profile. This contains your AWS Access Key and Secret Access Key. For more information how to create this file, [follow the instructions on setting up the AWS CLI](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html). This will means you wont have to explicitly state your `--accesskeyid` and `--secretaccesskey`.
 
 The `--accesskeyid` and `--secretaccesskey` options always override the `.credentials` file - therefore, if you have a `.credentials` file and have specified these options, the options will always take priority in authenticating to your account.
 
-## Role Support
+### Role Support
 You can assume a different AWS role by specifying the `--rolean`. Your specified IAM account must have access to the specified role ARN.
