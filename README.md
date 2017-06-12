@@ -34,7 +34,7 @@ Simply invoke `aws-pwe` to view the options available:
     
 
 ### `.credentials` file
-It is reccomended that you create a `.credentials` file in your Windows user profile. This contains your AWS Access Key and Secret Access Key. For more information how to create this file, [follow the instructions on setting up the AWS CLI](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html). This will means you wont have to explicitly state your `--accesskeyid` and `--secretaccesskey`.
+It is recommended that you create a `.credentials` file in your Windows user profile. This contains your AWS Access Key and Secret Access Key. For more information how to create this file, [follow the instructions on setting up the AWS CLI](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html). This will means you wont have to explicitly state your `--accesskeyid` and `--secretaccesskey`.
 
 The `--accesskeyid` and `--secretaccesskey` options always override the `.credentials` file - therefore, if you have a `.credentials` file and have specified these options, the options will always take priority in authenticating to your account.
 
