@@ -29,10 +29,3 @@ after_build:
 artifacts:
   - path: "*.nupkg"
     name: aws-pe Chocolatey Pacakge
-
-# Deployment Config
-deploy:
-  provider: NuGet
-  server: https://push.chocolatey.org/
-  api_key:
-    secure: 2mupreXlFW41QJIy+SXUt3ME8XXraJy5EGKj3EsK+GtZMc45gpXX26YOG57fghxb
