@@ -1,15 +1,22 @@
 # AWS Password Extractor
-[![Build status](https://ci.appveyor.com/api/projects/status/5iv6tqkvkm7b7xct?svg=true)](https://ci.appveyor.com/project/mmiddleton3301/aws-password-extractor)
+[![Build status](https://ci.appveyor.com/api/projects/status/5iv6tqkvkm7b7xct?svg=true)](https://ci.appveyor.com/project/mmiddleton3301/aws-password-extractor) [![Downloads Badge](https://img.shields.io/chocolatey/dt/aws-password-extractor.svg)](https://chocolatey.org/packages/aws-password-extractor) [![Version Badge](https://img.shields.io/chocolatey/v/aws-password-extractor.svg)](https://chocolatey.org/packages/aws-password-extractor)
 
 A console application (and C# library) designed to pull back all AWS EC2 instances, their IP addresses and root/administrator passwords for a given access key.
 
 ## Installation
-**aws-pe** does not need to be "installed" - just download the latest zip/build artifact from [AppVeyor](https://ci.appveyor.com/project/mmiddleton3301/aws-password-extractor/build/artifacts) and extract to a directory to use the executable.
+### Chocolatey
+The recommended way of installing **aws-pwe** is via [chocolatey](https://chocolatey.org/):
+
+`choco install aws-password-extractor `
+
+You can then simply invoke **aws-pwe** from the command line! As easy as that!
+
+### Manually
+**aws-pwe** can be downloaded and "installed" manually - just download the latest zip/build artifact from [AppVeyor](https://ci.appveyor.com/project/mmiddleton3301/aws-password-extractor/build/artifacts) and extract to a directory to use the executable.
 
 ### Coming Soon
 
-- Zips available via GitHub releases (when I can be bothered to figure out how to push releases to GitHub from AppVeyor);
-- Download via [chocolately](https://chocolatey.org/).
+- Zips available via GitHub releases (when I can be bothered to figure out how to push releases to GitHub from AppVeyor)
 
 ## Usage
 Simply invoke `aws-pwe` to view the options available:
