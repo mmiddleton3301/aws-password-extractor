@@ -335,13 +335,14 @@ namespace Meridian.AwsPasswordExtractor.Logic
             {
                 // passwordEncryptionKeyFile - needs to exist.
                 //                             A required parameter.
-                argumentsValid = outputFile.Exists;
+                argumentsValid = passwordEncryptionKeyFile.Exists;
 
                 if (!argumentsValid)
                 {
                     throw new FileLoadException(
                         $"The password encryption file located at: \"" +
-                        $"{outputFile.FullName}\" does not exist.");
+                        $"{passwordEncryptionKeyFile.FullName}\" does not " +
+                        $"exist.");
                 }
             }
 
