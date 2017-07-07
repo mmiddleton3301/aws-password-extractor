@@ -23,6 +23,7 @@ after_build:
     copy %APPVEYOR_BUILD_FOLDER%\LICENCE.md %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\bin\Release\aws-pwe-LICENCE.txt
     copy %APPVEYOR_BUILD_FOLDER%\VERIFICATION.txt %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\bin\Release\VERIFICATION.txt
     copy %APPVEYOR_BUILD_FOLDER%\README.md %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\bin\Release\ReadMe.txt
+    del %APPVEYOR_BUILD_FOLDER%\README.md %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\bin\Release\*.xml
     7z a aws-pe.zip %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\bin\Release\*.*
     AppVeyor PushArtifact aws-pe.zip -DeploymentName "aws-pe Binaries"
     choco pack %APPVEYOR_BUILD_FOLDER%\Meridian.AwsPasswordExtractor\Meridian.AwsPasswordExtractor.Console\Meridian.AwsPasswordExtractor.Console.nuspec
