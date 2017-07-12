@@ -5,18 +5,14 @@ A console application (and C# library) designed to pull back all AWS EC2 instanc
 
 ## Installation
 ### Chocolatey
-The recommended way of installing **aws-pwe** is via [chocolatey](https://chocolatey.org/):
+The recommended way of installing `aws-pwe` is via [chocolatey](https://chocolatey.org/):
 
 `choco install aws-password-extractor `
 
-You can then simply invoke **aws-pwe** from the command line! As easy as that!
+You can then simply invoke `aws-pwe` from the command line! As easy as that!
 
 ### Manually
-**aws-pwe** can be downloaded and "installed" manually - just download the latest zip/build artifact from [AppVeyor](https://ci.appveyor.com/project/mmiddleton3301/aws-password-extractor/build/artifacts) and extract to a directory to use the executable.
-
-### Coming Soon
-
-- Zips available via GitHub releases (when I can be bothered to figure out how to push releases to GitHub from AppVeyor)
+If you don't want to use chocolatey, `aws-pwe` can be downloaded and "installed" manually: just download the latest release from GitHub, unzip the contents of the archive to a directory of your choosing, and start your command line from that directory. Invoke `aws-pwe` at your leisure.
 
 ## Usage
 Simply invoke `aws-pwe` to view the options available:
