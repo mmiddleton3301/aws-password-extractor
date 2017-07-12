@@ -58,7 +58,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
 
         /// <summary>
         /// Implements
-        /// <see cref="IOutputFileGenerator.CreateOutputFile(Tuple{string, string} string, FileInfo, string, FileInfo)" />. 
+        /// <see cref="IOutputFileGenerator.CreateOutputFile(Tuple{string, string} string, FileInfo, DirectoryInfo, string, FileInfo)" />. 
         /// </summary>
         /// <param name="awsAccessKeys">
         /// An instance of <see cref="Tuple{string, string}" /> containing
@@ -70,6 +70,10 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// </param>
         /// <param name="passwordEncryptionKeyFile">
         /// The location of the password encryption key file.
+        /// </param>
+        /// <param name="passwordEncryptionKeyFileDir">
+        /// The location of a directory containing multiple password encryption
+        /// key files.
         /// </param>
         /// <param name="roleArn">
         /// An IAM role ARN to assume prior to pulling back EC2
@@ -86,6 +90,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
             Tuple<string, string> awsAccessKeys,
             string region,
             FileInfo passwordEncryptionKeyFile,
+            DirectoryInfo passwordEncryptionKeyFileDir,
             string roleArn,
             FileInfo outputFile)
         {
@@ -97,6 +102,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
                     awsAccessKeys,
                     region,
                     passwordEncryptionKeyFile,
+                    passwordEncryptionKeyFileDir,
                     roleArn,
                     outputFile);
 
@@ -130,6 +136,10 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// <param name="passwordEncryptionKeyFile">
         /// The location of the password encryption key file.
         /// </param>
+        /// <param name="passwordEncryptionKeyFileDir">
+        /// The location of a directory containing multiple password encryption
+        /// key files.
+        /// </param>
         /// <param name="roleArn">
         /// An IAM role ARN to assume prior to pulling back EC2
         /// <see cref="InstanceDetail" />. Optional.
@@ -141,6 +151,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
             Tuple<string, string> awsAccessKeys,
             string region,
             FileInfo passwordEncryptionKeyFile,
+            DirectoryInfo passwordEncryptionKeyFileDir,
             string roleArn,
             FileInfo outputFile)
         {
@@ -148,6 +159,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
                 awsAccessKeys,
                 region,
                 passwordEncryptionKeyFile,
+                passwordEncryptionKeyFileDir,
                 roleArn,
                 outputFile);
             
@@ -292,6 +304,10 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// <param name="passwordEncryptionKeyFile">
         /// The location of the password encryption key file.
         /// </param>
+        /// <param name="passwordEncryptionKeyFileDir">
+        /// The location of a directory containing multiple password encryption
+        /// key files.
+        /// </param>
         /// <param name="roleArn">
         /// An IAM role ARN to assume prior to pulling back EC2
         /// <see cref="InstanceDetail" />. Optional.
@@ -303,17 +319,16 @@ namespace Meridian.AwsPasswordExtractor.Logic
             Tuple<string, string> awsAccessKeys,
             string region,
             FileInfo passwordEncryptionKeyFile,
+            DirectoryInfo passwordEncryptionKeyFileDir,
             string roleArn,
             FileInfo outputFile)
         {
-            bool argumentsValid = true;
-
             this.loggingProvider.Debug("Validating arguments...");
 
             // awsAccessKeys
             // For this param to be valid, either both values need to be
             // specified OR none at all.
-            argumentsValid =
+            bool awsAccessKeysValid =
                 (!string.IsNullOrEmpty(awsAccessKeys.Item1)
                     &&
                 !string.IsNullOrEmpty(awsAccessKeys.Item2))
@@ -322,7 +337,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
                     &&
                 string.IsNullOrEmpty(awsAccessKeys.Item2));
 
-            if (!argumentsValid)
+            if (!awsAccessKeysValid)
             {
                 throw new InvalidOperationException(
                     "If specifying AWS credentials explicitly, you must " +
@@ -331,25 +346,77 @@ namespace Meridian.AwsPasswordExtractor.Logic
 
             // region - validated when injected into logic layer (if the
             //          region isn't valid, an exception will be thrown).
-            if (argumentsValid)
-            {
-                // passwordEncryptionKeyFile - needs to exist.
-                //                             A required parameter.
-                argumentsValid = passwordEncryptionKeyFile.Exists;
 
-                if (!argumentsValid)
+            // passwordEncryptionKeyFile and passwordEncryptionKeyFileDir -
+            // 1) Mandatory that at least one is specified;
+            // 2) However, only one can be specified, not both;
+            // 3) In the case of passwordEncryptionKeyFile, the file must
+            //    exist;
+            // 4) In the case of passwordEncryptionKeyFileDir, the directory
+            //    must exist and there must be at least one file specified.
+            // 1...
+            if (passwordEncryptionKeyFile == null && passwordEncryptionKeyFileDir == null)
+            {
+                throw new InvalidOperationException(
+                    "You must specify either a single password encryption " +
+                    "key file, or a directory containing multiple password " +
+                    "encryption key files.");
+            }
+
+            // 2...
+            if (passwordEncryptionKeyFile != null && passwordEncryptionKeyFileDir != null)
+            {
+                throw new InvalidOperationException(
+                    "You must specify either a single password encryption " +
+                    "key file *OR* a directory containing multiple password " +
+                    "encryption key files - you cannot specify both.");
+            }
+
+            // 3...
+            if (passwordEncryptionKeyFile != null)
+            {
+                // If we've gotten here, then the single password encryption
+                // key file has been specified.
+                if (!passwordEncryptionKeyFile.Exists)
                 {
                     throw new FileLoadException(
                         $"The password encryption file located at: \"" +
-                        $"{passwordEncryptionKeyFile.FullName}\" does not " +
+                        $"{passwordEncryptionKeyFile.FullName}\" does " +
+                        $"not exist.");
+                }
+            }
+            else
+            {
+                // Otherwise, it's the directory.
+                if (!passwordEncryptionKeyFileDir.Exists)
+                {
+                    // It does not exist...
+                    throw new FileLoadException(
+                        $"The password encryption key file directory " +
+                        $"located at " +
+                        $"{passwordEncryptionKeyFileDir.FullName} does not " +
                         $"exist.");
+                }
+                else
+                {
+                    // It does exist. Does it contain files, at least?
+                    FileInfo[] dirFiles =
+                        passwordEncryptionKeyFileDir.GetFiles();
+
+                    if (dirFiles.Length <= 0)
+                    {
+                        throw new FileLoadException(
+                            $"The password encryption key file directory " +
+                            $"located at " +
+                            $"{passwordEncryptionKeyFileDir.FullName} does " +
+                            $"not contain any files.");
+                    }
                 }
             }
 
-            this.loggingProvider.Info(
-                $"Argument validation result = {argumentsValid}.");
-
             // roleArn - optional and also validated on the logic layer.
+            this.loggingProvider.Info(
+                "Argument validation completed with success.");
         }
     }
 }

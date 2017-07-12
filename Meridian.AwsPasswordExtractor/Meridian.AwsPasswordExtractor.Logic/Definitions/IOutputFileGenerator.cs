@@ -30,6 +30,10 @@ namespace Meridian.AwsPasswordExtractor.Logic.Definitions
         /// <param name="passwordEncryptionKeyFile">
         /// The location of the password encryption key file.
         /// </param>
+        /// <param name="passwordEncryptionKeyFileDir">
+        /// The location of a directory containing multiple password encryption
+        /// key files.
+        /// </param>
         /// <param name="roleArn">
         /// An IAM role ARN to assume prior to pulling back EC2
         /// <see cref="InstanceDetail" />. Optional.
@@ -45,6 +49,7 @@ namespace Meridian.AwsPasswordExtractor.Logic.Definitions
             Tuple<string, string> awsAccessKeys,
             string region,
             FileInfo passwordEncryptionKeyFile,
+            DirectoryInfo passwordEncryptionKeyFileDir,
             string roleArn,
             FileInfo outputFile);
     }

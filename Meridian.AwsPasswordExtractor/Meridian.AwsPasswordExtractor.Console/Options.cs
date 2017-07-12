@@ -79,11 +79,25 @@ namespace Meridian.AwsPasswordExtractor.Console
         /// Gets or sets the location of the password encryption key file.
         /// </summary>
         [Option(
-            Required = true,
-            HelpText = "The password encryption key file, used when " +
-            "originally spawning the EC2 instances. This is used in " +
-            "decrypting the password data pulled back from the API.")]
+            Required = false,
+            HelpText = "The password encryption key file for the EC2 " +
+            "instances.")]
         public FileInfo PasswordEncryptionKeyFile
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets or sets a directory containing password encryption key files.
+        /// </summary>
+        [Option(
+            Required = false,
+            HelpText = "A directory containing password encryption key " +
+            "files for EC2 instances. Useful when you have multiple key " +
+            "files for a single environment. All valid key files in this " +
+            "directory will be used to attempt decryption of EC2 passwords.")]
+        public DirectoryInfo PasswordEncryptionKeyFileDirectory
         {
             get;
             set;
