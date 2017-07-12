@@ -91,12 +91,15 @@ namespace Meridian.AwsPasswordExtractor.Console
             IOutputFileGenerator outputFileGenerator =
                 container.GetInstance<IOutputFileGenerator>();
 
+            Tuple<string, string> explicitKey = new Tuple<string, string>(
+                options.AccessKeyId,
+                options.SecretAccessKey);
+
             executionSuccess = outputFileGenerator.CreateOutputFile(
-                new Tuple<string, string>(
-                    options.AccessKeyId,
-                    options.SecretAccessKey),
+                explicitKey,
                 options.AwsRegion,
                 options.PasswordEncryptionKeyFile,
+                options.PasswordEncryptionKeyFileDirectory,
                 options.RoleArn,
                 options.OutputFile);
         }
