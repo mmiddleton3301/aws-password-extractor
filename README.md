@@ -50,7 +50,7 @@ The `--accesskeyid` and `--secretaccesskey` options always override the `.creden
 ### Role Support
 You can assume a different AWS role by specifying the `--rolean`. Your specified IAM account must have access to the specified role ARN.
 
-### :new: Support for multiple EC2 password encryption files
+### Support for multiple EC2 password encryption files
 As of v1.1.0 you can now specify a directory containing multiple EC2 password encryption files using `--passwordencryptionkeyfiledirectory`. When pulling back instance information, `aws-pwe` will attempt to decrypt the instance password with each key located in that directory until it either gets it right, or runs out more keys to try.
 
 Alternatively, if you just have one key, you can still invoke `--passwordencryptionkeyfile`.
