@@ -183,6 +183,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
                     awsAccessKeys,
                     region,
                     passwordEncryptionKeyFile,
+                    passwordEncryptionKeyFileDir,
                     roleArn);
 
             this.loggingProvider.Info(

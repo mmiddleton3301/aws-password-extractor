@@ -78,6 +78,10 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// <param name="passwordEncryptionKeyFile">
         /// The location of the password encryption key file.
         /// </param>
+        /// <param name="passwordEncryptionKeyFileDir">
+        /// The location of a directory containing multiple password encryption
+        /// key files.
+        /// </param>
         /// <param name="roleArn">
         /// An IAM role ARN to assume prior to pulling back EC2
         /// <see cref="InstanceDetail" />. Optional.
@@ -89,6 +93,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
             Tuple<string, string> awsAccessKeys,
             string region,
             FileInfo passwordEncryptionKeyFile,
+            DirectoryInfo passwordEncryptionKeyFileDir,
             string roleArn)
         {
             InstanceDetail[] toReturn = null;
@@ -122,7 +127,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
             if (regionEndpoint.DisplayName == "Unknown")
             {
                 throw new InvalidDataException(
-                    $"The specified AWS region is unknown. Please specify a " + 
+                    $"The specified AWS region is unknown. Please specify a " +
                     $"valid region, for example: " +
                     $"\"{RegionEndpoint.EUWest2.SystemName}\".");
             }
@@ -198,18 +203,40 @@ namespace Meridian.AwsPasswordExtractor.Logic
             this.loggingProvider.Info(
                 $"{allInstances.Length} {nameof(Instance)}(s) selected.");
 
-            this.loggingProvider.Debug(
-                $"Reading the password encryption key into memory " +
-                $"(located at \"{passwordEncryptionKeyFile.FullName}\")...");
+            FileInfo[] passwordEncryptionKeyFiles = null;
 
-            // Read the password encryption key.
-            string passwordEncryptionKey =
-                this.fileSystemProvider.ReadFileInfoAsString(
-                    passwordEncryptionKeyFile);
+            if (passwordEncryptionKeyFile != null)
+            {
+                this.loggingProvider.Info(
+                    $"A single {nameof(passwordEncryptionKeyFile)} was " +
+                    $"specified, rather than a directory. " +
+                    $"\"{passwordEncryptionKeyFile.FullName}\" will be used.");
 
-            this.loggingProvider.Info(
-                $"Password encryption key read into memory - length: " +
-                $"{passwordEncryptionKeyFile.Length}.");
+                // Then just use the single password encryption key file
+                // specified.
+                passwordEncryptionKeyFiles = new FileInfo[]
+                {
+                    passwordEncryptionKeyFile
+                };
+            }
+            else
+            {
+                // Then use the password encryption key files in the specified
+                // directory.
+                passwordEncryptionKeyFiles =
+                    passwordEncryptionKeyFileDir.GetFiles();
+
+                this.loggingProvider.Info(
+                    $"{nameof(passwordEncryptionKeyFileDir)} was specified, " +
+                    $"and therefore all {passwordEncryptionKeyFiles.Length} " +
+                    $"file(s) in " +
+                    $"\"{passwordEncryptionKeyFileDir.FullName}\" will be " +
+                    $"read into memory as potential key files.");
+            }
+
+            string[] passwordEncryptionKeys =
+                this.GetPasswordEncryptionKeysFromFiles(
+                    passwordEncryptionKeyFiles);
 
             this.loggingProvider.Debug(
                 $"Fetching passwords for all {allInstances.Length} " +
@@ -218,7 +245,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
             toReturn = allInstances
                 .Select(x => this.ConvertInstanceToInstanceDetail(
                     amazonEC2,
-                    passwordEncryptionKey,
+                    passwordEncryptionKeys,
                     x))
                 .ToArray();
 
@@ -341,8 +368,8 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// <param name="amazonEC2">
         /// An instance of <see cref="IAmazonEC2" />. 
         /// </param>
-        /// <param name="passwordEncryptionKey">
-        /// The AWS password encryption key, used in decryption.
+        /// <param name="passwordEncryptionKeys">
+        /// Multiple EC2 password encryption keys.
         /// </param>
         /// <param name="instance">
         /// An instance of <see cref="Instance" />. 
@@ -352,7 +379,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// </returns>
         private InstanceDetail ConvertInstanceToInstanceDetail(
             IAmazonEC2 amazonEC2,
-            string passwordEncryptionKey,
+            string[] passwordEncryptionKeys,
             Instance instance)
         {
             InstanceDetail toReturn = null;
@@ -373,7 +400,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
 
             string instancePassword = this.GetInstancePassword(
                 amazonEC2,
-                passwordEncryptionKey,
+                passwordEncryptionKeys,
                 instance.InstanceId);
 
             toReturn.Password = instancePassword;
@@ -391,8 +418,8 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// <param name="amazonEC2">
         /// An instance of <see cref="IAmazonEC2" />. 
         /// </param>
-        /// <param name="passwordEncryptionKey">
-        /// The AWS password encryption key, used in decryption.
+        /// <param name="passwordEncryptionKeys">
+        /// Multiple EC2 password encryption keys.
         /// </param>
         /// <param name="instanceId">
         /// The id of the <see cref="Instance" /> to pull back a password for.
@@ -402,7 +429,7 @@ namespace Meridian.AwsPasswordExtractor.Logic
         /// </returns>
         private string GetInstancePassword(
             IAmazonEC2 amazonEC2,
-            string passwordEncryptionKey,
+            string[] passwordEncryptionKeys,
             string instanceId)
         {
             string toReturn = null;
@@ -419,30 +446,94 @@ namespace Meridian.AwsPasswordExtractor.Logic
 
             this.loggingProvider.Info(
                 $"Password data returned for {nameof(Instance)} ID " +
-                $"\"{instanceId}\".");
-                
-            try
+                $"\"{instanceId}\". Attempting to decrypt password with " +
+                $"all {passwordEncryptionKeys.Length} password encryption " +
+                $"key(s) in memory...");
+
+            // Only keep going for as long as we don't have a key decrypted.
+            string passwordEncryptionKey = null;
+            for (int i = 0; i < passwordEncryptionKeys.Length && string.IsNullOrEmpty(toReturn); i++)
             {
-                this.loggingProvider.Debug(
-                    $"Using password encryption key to decrypt password " +
-                    $"for {nameof(Instance)} ID \"{instanceId}\"...");
+                try
+                {
+                    passwordEncryptionKey = passwordEncryptionKeys[i];
 
-                toReturn = getPasswordDataResponse
-                    .GetDecryptedPassword(passwordEncryptionKey);
+                    this.loggingProvider.Debug(
+                        $"Using password encryption key " +
+                        $"{i + 1}/{passwordEncryptionKeys.Length} to " +
+                        $"decrypt password for {nameof(Instance)} ID " +
+                        $"\"{instanceId}\"...");
 
-                this.loggingProvider.Info(
-                    $"Password for {nameof(Instance)} ID \"{instanceId}\" " +
-                    $"decrypted with success.");
+                    toReturn = getPasswordDataResponse
+                        .GetDecryptedPassword(passwordEncryptionKey);
+
+                    this.loggingProvider.Info(
+                        $"Password for {nameof(Instance)} ID " +
+                        $"\"{instanceId}\" decrypted with success.");
+                }
+                catch (CryptographicException)
+                {
+                    // We still want to carry on if we can't decrypt the
+                    // password, but...
+                    this.loggingProvider.Warn(
+                        $"Could not decrypt password for {nameof(Instance)} " +
+                        $"ID \"{instanceId}\" using password encryption key " +
+                        $"{i + 1}/{passwordEncryptionKeys.Length}.");
+                }
             }
-            catch (CryptographicException)
+
+            if (string.IsNullOrEmpty(toReturn))
             {
-                // We still want to carry on if we can't decrypt the password,
-                // but...
                 this.loggingProvider.Error(
-                    $"Could not decrypt password for {nameof(Instance)} " +
-                    $"ID \"{instanceId}\"! Are you sure that the password " +
-                    $"encryption key is correct? Returning null.");
+                    $"Could not decrypt password for {nameof(Instance)}: " +
+                    $"{passwordEncryptionKeys.Length} password encryption " +
+                    $"keys were tried, and none succeeded. Are you sure " +
+                    $"that the key file(s) are correct?");
             }
+
+            return toReturn;
+        }
+
+        /// <summary>
+        /// Reads an array of <see cref="FileInfo" /> instances and returns the
+        /// content of the files as an array of <see cref="string" /> values. 
+        /// </summary>
+        /// <param name="passwordEncryptionKeyFiles">
+        /// An array of <see cref="FileInfo" /> instances, describing where the
+        /// password encryption key files are.
+        /// </param>
+        /// <returns>
+        /// The content of the files, as an array of <see cref="string" />
+        /// values.
+        /// </returns>
+        private string[] GetPasswordEncryptionKeysFromFiles(
+            FileInfo[] passwordEncryptionKeyFiles)
+        {
+            string[] toReturn = null;
+
+            this.loggingProvider.Debug(
+                $"Reading {passwordEncryptionKeyFiles.Length} key file(s) " +
+                $"into memory...");
+
+            toReturn = passwordEncryptionKeyFiles
+                .Select(x =>
+                {
+                    this.loggingProvider.Debug(
+                        $"Reading the password encryption key into memory " +
+                        $"(located at " +
+                        $"\"{x.FullName}\")...");
+
+                    // Read the password encryption key.
+                    string passwordEncryptionKey =
+                        this.fileSystemProvider.ReadFileInfoAsString(x);
+
+                    this.loggingProvider.Info(
+                        $"Password encryption key read into memory - " +
+                        $"length: {x.Length}.");
+
+                    return passwordEncryptionKey;
+                })
+                .ToArray();
 
             return toReturn;
         }
